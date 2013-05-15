@@ -1,0 +1,10 @@
+The Escape programming language v0.0.1(Alpha) Release Notes
+===========================================================
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * variable
+ * function definition
+ * struct
+

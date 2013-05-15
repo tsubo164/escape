@@ -1,0 +1,72 @@
+#!/bin/sh
+
+cc=gcc
+bindir=`dirname $0`
+print_c_code="$bindir/print-c-code"
+print_tree="$bindir/print-tree"
+
+opt_print_tree=f
+opt_print_c_code=f
+es_file=
+c_file=
+
+usage() {
+	echo "Usage: ecc"
+	exit 1
+}
+
+while :
+do
+	case "$1" in
+		--print-tree)
+			opt_print_tree=t
+			shift
+			continue
+			;;
+		--print-c-code)
+			opt_print_c_code=t
+			shift
+			continue
+			;;
+		-*)
+			echo "#  ecc: Invalide argument: $1"
+			exit 1
+			;;
+		*)
+			es_file=$1
+			shift
+			break
+			;;
+	esac
+done
+
+# check the input file
+if [ ! -f "$es_file" ]; then
+	echo "#  ecc: $es_file: No such file or directory."
+	exit 1
+fi
+
+if [ "$opt_print_tree" = t ]; then
+	$print_tree "$es_file"
+	exit 0
+fi
+
+if [ "$opt_print_c_code" = t ]; then
+	$print_c_code "$es_file"
+	exit 0
+fi
+
+c_file=${es_file}.c
+
+$print_c_code "$es_file" > "$c_file"
+
+if [ $? -ne 0 ]; then
+	echo error
+	exit 1
+fi
+
+$cc -Wall -O3 -ansi --pedantic-error $c_file
+rm -f $c_file
+
+exit 0
+
