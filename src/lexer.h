@@ -9,31 +9,32 @@ See LICENSE and README
 #include <stdio.h>
 
 enum TokenTag {
-	/* tokens */
-	TK_BEGIN_TOKENS = 256,
-	TK_COMMENT,
-	TK_IDENTIFIER,
-	TK_NUMBER,
-	TK_STRING,
-	/* keywords */
-	TK_BEGIN_KEYWORDS,
-	TK_KW_FUNCTION,
-	TK_KW_INT,
-	TK_KW_STRING,
-	TK_KW_RETURN,
-	TK_END_TOKENS
+  /* tokens */
+  TK_BEGIN_TOKENS = 256,
+  TK_COMMENT,
+  TK_IDENTIFIER,
+  TK_NUMBER,
+  TK_STRING,
+  /* keywords */
+  TK_BEGIN_KEYWORDS,
+  TK_KW_FUNCTION,
+  TK_KW_INT,
+  TK_KW_STRING,
+  TK_KW_RETURN,
+  TK_KW_VAR,
+  TK_END_TOKENS
 };
 
 enum { MAX_NAME_SIZE = 64 };
 
 struct Token {
-	int tag;
-	union {
-		double number;
-		char name[MAX_NAME_SIZE];
-		const char *string;
-	} value;
-	int data_type;
+  int tag;
+  union {
+    double number;
+    char name[MAX_NAME_SIZE];
+    const char *string;
+  } value;
+  int data_type;
 };
 
 struct Lexer;

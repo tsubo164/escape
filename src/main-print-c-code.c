@@ -164,13 +164,49 @@ static void NODE_RETURN_STMT_post_code(const struct AstNode *node, int depth)
 	printf(";\n");
 }
 
+/* NODE_VAR_DECL */
+static void NODE_VAR_DECL_pre_code(const struct AstNode *node, int depth)
+{
+	int i;
+	for (i = 0; i < depth; i++) {
+		printf("  ");
+	}
+	printf("int %s = 0", "foo");
+}
+static void NODE_VAR_DECL_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_VAR_DECL_post_code(const struct AstNode *node, int depth)
+{
+	printf(";\n");
+}
+
+/* NODE_ASSIGN */
+static void NODE_ASSIGN_pre_code(const struct AstNode *node, int depth)
+{
+	int i;
+	for (i = 0; i < depth; i++) {
+		printf("  ");
+	}
+	printf("%s = 111", "foo");
+}
+static void NODE_ASSIGN_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_ASSIGN_post_code(const struct AstNode *node, int depth)
+{
+	printf(";\n");
+}
+
 #define CCODE(node_type) \
 	{node_type, node_type##_pre_code, node_type##_in_code, node_type##_post_code}
 static const struct CCode ccodes[] = {
+	CCODE(NODE_ASSIGN),
 	CCODE(NODE_EXPR),
 	CCODE(NODE_FUNC_CALL),
 	CCODE(NODE_FUNC_DEF),
-	CCODE(NODE_RETURN_STMT)
+	CCODE(NODE_RETURN_STMT),
+	CCODE(NODE_VAR_DECL)
 };
 static const int N_CCODES = sizeof(ccodes)/sizeof(ccodes[0]);
 

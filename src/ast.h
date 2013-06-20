@@ -10,12 +10,14 @@ struct Symbol;
 
 enum AstNodeType {
 	NODE_NULL = 0,
+	NODE_ASSIGN,
 	NODE_BLOCK,
 	NODE_EXPR,
 	NODE_FUNC_DEF,
 	NODE_FUNC_CALL,
 	NODE_LIST,
 	NODE_RETURN_STMT,
+	NODE_VAR_DECL,
 	NODE_END
 };
 
@@ -30,6 +32,7 @@ struct AstNode {
 	struct AstNode *right;
 };
 
+extern struct AstNode *AstNode_Duplicate(const struct AstNode *src);
 extern struct AstNode *AstNode_New(int ast_node_type);
 extern void AstNode_Free(struct AstNode *node);
 
