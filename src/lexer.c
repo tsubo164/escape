@@ -74,7 +74,8 @@ static const struct Keyword keywords[] = {
   {"int",      TK_KW_INT,      TYPE_INT},
   {"return",   TK_KW_RETURN,   TYPE_NONE},
   {"string",   TK_KW_STRING,   TYPE_STRING},
-  {"var",      TK_KW_VAR,      TYPE_NONE}
+  {"var",      TK_KW_VAR,      TYPE_NONE},
+  {"vardump",  TK_KW_VARDUMP,  TYPE_NONE}
 };
 static const size_t N_KEYWORDS = sizeof(keywords)/sizeof(keywords[0]);
 static int compare_keywords(const void *ptr0, const void *ptr1);

@@ -18,47 +18,7 @@ typedef struct Symbol Symbol;
 typedef struct AstNode Node;
 typedef struct Token Token;
 
-static Node * program                     (Parser *parser);
-
-static Node * function_definition         (Parser *parser);
-static Node * function_signature          (Parser *parser);
-static Node * function_body               (Parser *parser);
-
-static Node * statement_list              (Parser *parser);
-static Node * statement                   (Parser *parser);
-
-static Node * return_statement            (Parser *parser);
-static Node * assignment_or_function_call (Parser *parser);
-static Node * function_call               (Parser *parser);
-
-static Node * primary_expression          (Parser *parser);
-
-static DataType type_specifier            (Parser *parser);
-
-static const Token *get_current_token(Parser *parser);
-static const Token *get_next_token(Parser *parser);
-static const Token *peek_next_token(Parser *parser);
-static void put_back_token(Parser *parser);
-
-static const Token *assert_next_token(Parser *parser, int expected_token_tag);
-static void parse_error(Parser *parser, const char *detail);
-static void skip_until(Parser *parser, int token_tag);
-
-static Node *list_node(Node *current, Node *next)
-{
-  Node *node = AstNode_New(NODE_LIST);
-  node->left  = current;
-  node->right = next;
-  return node;
-}
-
-static Node *block_node(Node *decl_list, Node *stmt_list)
-{
-  Node *node = AstNode_New(NODE_BLOCK);
-  node->left  = decl_list;
-  node->right = stmt_list;
-  return node;
-}
+static Node * program(Parser *parser);
 
 typedef struct ErrorInfo ErrorInfo;
 enum { TOKEN_BUF_SIZE = 2 };
@@ -154,170 +114,11 @@ const struct ErrorInfo *Parser_GetErrorInfo(struct Parser *parser, int index)
   return &parser->errors[index];
 }
 
-/*
-statement_list :=
-  | statement statement_list
-*/
-static Node *statement_list(Parser *parser)
-{
-  Node *stmt = NULL;
-
-  stmt = statement(parser);
-  if (stmt == NULL) {
-    return NULL;
-  }
-
-  return list_node(stmt, statement_list(parser));
-}
-
-/*
-statement
-  : return_statement
-  | assignment_or_function_call
-  ;
-*/
-static Node *statement(Parser *parser)
-{
-  const Token *token = NULL;
-  Node *stmt = NULL;
-
-  token = peek_next_token(parser);
-  switch (token->tag) {
-  case TK_KW_RETURN:
-    stmt = return_statement(parser);
-    break;
-  case TK_IDENTIFIER:
-    stmt = assignment_or_function_call(parser);
-    break;
-  default:
-    return NULL;
-  }
-
-  token = get_next_token(parser);
-  if (token->tag != ';') {
-    parse_error(parser, "missing ';'");
-    skip_until(parser, ';');
-  }
-
-  return stmt;
-}
-
-static Node *return_statement(struct Parser *parser)
-{
-  const struct Token *token = NULL;
-  Node *stmt_return = NULL;
-
-  assert_next_token(parser, TK_KW_RETURN);
-
-  /* TODO TMP */
-  token = get_next_token(parser);
-  if (token->tag != TK_NUMBER) {
-    /* TODO error handling */
-    skip_until(parser, ';');
-    return stmt_return;
-  }
-
-  stmt_return = AstNode_New(NODE_RETURN_STMT);
-  stmt_return->left = AstNode_New(NODE_EXPR);
-  stmt_return->left->value.number = token->value.number;
-
-  return stmt_return;
-}
-
-static Node * function_call(Parser *parser)
-{
-  Node *node = NULL;
-  Node *args = NULL;
-
-  assert_next_token(parser, '(');
-
-  args = primary_expression(parser);
-
-  assert_next_token(parser, ')');
-
-  node = AstNode_New(NODE_FUNC_CALL);
-  node->left = args;
-
-  return node;
-}
-
-static Node * primary_expression(Parser *parser)
-{
-  const Token *token = NULL;
-  Symbol *symbol = NULL;
-  Node *node = NULL;
-
-  token = get_next_token(parser);
-  switch (token->tag) {
-  case TK_STRING:
-    symbol = SymbolTable_Add(
-        parser->table,
-        token->value.string,
-        SYM_STRING_LITERAL);
-    node = AstNode_New(NODE_EXPR);
-    node->value.symbol = symbol;
-    break;
-  default:
-    break;
-  }
-
-  return node;
-}
-
-static const Token *get_current_token(Parser *parser)
-{
-  return &parser->token_buf[parser->curr_token_index];
-}
-
-static const Token *get_next_token(Parser *parser)
-{
-  Token *token = NULL;
-
-  for (;;) {
-    parser->curr_token_index = (parser->curr_token_index + 1) % TOKEN_BUF_SIZE;
-    token = &parser->token_buf[parser->curr_token_index];
-
-    if (parser->is_head_token) {
-      Lexer_NextToken(parser->lexer, token);
-    }
-    parser->is_head_token = 1;
-
-    switch (token->tag) {
-    case TK_COMMENT:
-      continue;
-    default:
-      break;
-    }
-
-    break;
-  }
-
-  return token;
-}
-
 static void put_back_token(Parser *parser)
 {
   parser->curr_token_index =
       (parser->curr_token_index + TOKEN_BUF_SIZE - 1) % TOKEN_BUF_SIZE;
   parser->is_head_token = 0;
-}
-
-static const Token *peek_next_token(Parser *parser)
-{
-  const Token *token = get_next_token(parser);
-  put_back_token(parser);
-
-  return token;
-}
-
-static const Token *assert_next_token(Parser *parser, int expected_token_tag)
-{
-  const Token *token = get_next_token(parser);
-  if (token->tag != expected_token_tag) {
-    fprintf(stderr, "compiler implementation error\n");
-    abort();
-  }
-  return token;
 }
 
 static void parse_error(Parser *parser, const char *detail)
@@ -336,25 +137,82 @@ static void parse_error(Parser *parser, const char *detail)
   parser->error_count++;
 }
 
-static void skip_until(Parser *parser, int token_tag)
+/* -------------------------------------------------------------------------- */
+static struct SymbolTable *symbol_table(const Parser *parser)
 {
-  const Token *token = NULL;
+  return parser->table;
+}
 
-  token = get_current_token(parser);
+static const Token *get_current_token(const Parser *parser)
+{
+  return &parser->token_buf[parser->curr_token_index];
+}
+
+static int token_tag(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->tag;
+}
+
+static DataType token_data_type(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->data_type;
+}
+
+static const char *token_name(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->value.name;
+}
+
+static double token_number(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->value.number;
+}
+
+static const char *token_string(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->value.string;
+}
+
+static int get_next_token(Parser *parser)
+{
   for (;;) {
-    if (token->tag == token_tag) {
+    Token *token = NULL;
+    parser->curr_token_index = (parser->curr_token_index + 1) % TOKEN_BUF_SIZE;
+    token = &parser->token_buf[parser->curr_token_index];
+
+    if (parser->is_head_token) {
+      Lexer_NextToken(parser->lexer, token);
+    }
+    parser->is_head_token = 1;
+
+    switch (token_tag(parser)) {
+    case TK_COMMENT:
+      continue;
+    default:
       break;
     }
-    token = get_next_token(parser);
+
+    break;
+  }
+
+  return token_tag(parser);
+}
+
+static void skip_until(Parser *parser, int until_tag)
+{
+  int tag = token_tag(parser);
+
+  for (;;) {
+    if (tag == until_tag) {
+      break;
+    }
+    tag = get_next_token(parser);
   }
 }
 
-/* -------------------------------------------------------------------------- */
 static int expect(Parser *parser, int expected_token_tag)
 {
-  const Token *token = get_next_token(parser);
-
-  if (token->tag == expected_token_tag) {
+  if (get_next_token(parser) == expected_token_tag) {
     return 1;
   } else {
     put_back_token(parser);
@@ -362,36 +220,31 @@ static int expect(Parser *parser, int expected_token_tag)
   }
 }
 
-/*
-static int peek_next_token2(Parser *parser)
+static int peek_next_token(Parser *parser)
 {
-  const Token *token = get_next_token(parser);
-  const int tag = token->tag;
+  const int tag = get_next_token(parser);
 
   put_back_token(parser);
 
   return tag;
 }
-*/
 
-static DataType type_specifier(Parser *parser)
+static int assert_next_token(Parser *parser, int expected_token_tag)
 {
-  const Token *token = get_next_token(parser);
+  const int tag = get_next_token(parser);
 
-  if (token->data_type == TYPE_NONE) {
-    put_back_token(parser);
-    return TYPE_NONE;
+  if (tag != expected_token_tag) {
+    fprintf(stderr, "compiler implementation error\n");
+    abort();
   }
-
-  return token->data_type;
+  return tag;
 }
 
 static Symbol *new_symbol(Parser *parser, int symbol_type)
 {
-  const Token *token = get_current_token(parser);
   Symbol *symbol = SymbolTable_Add(
-      parser->table,
-      token->value.name,
+      symbol_table(parser),
+      token_name(parser),
       symbol_type);
 
   if (symbol == NULL) {
@@ -399,6 +252,144 @@ static Symbol *new_symbol(Parser *parser, int symbol_type)
   }
 
   return symbol;
+}
+
+static Node *list_node(Node *current, Node *next)
+{
+  Node *node = AstNode_New(NODE_LIST);
+  node->left  = current;
+  node->right = next;
+  return node;
+}
+
+static Node *block_node(Node *decl_list, Node *stmt_list)
+{
+  Node *node = AstNode_New(NODE_BLOCK);
+  node->left  = decl_list;
+  node->right = stmt_list;
+  return node;
+}
+
+static DataType type_specifier(Parser *parser)
+{
+  DataType data_type = TYPE_NONE;
+
+  get_next_token(parser);
+  data_type = token_data_type(parser);
+
+  if (data_type == TYPE_NONE) {
+    put_back_token(parser);
+    return TYPE_NONE;
+  }
+
+  return data_type;
+}
+
+/*
+primary_expression
+  ;
+*/
+static Node * primary_expression(Parser *parser)
+{
+  Symbol *symbol = NULL;
+  Node *node = NULL;
+
+  switch (get_next_token(parser)) {
+  case TK_STRING:
+    symbol = SymbolTable_Add(
+        symbol_table(parser),
+        token_string(parser),
+        SYM_STRING_LITERAL);
+    node = AstNode_New(NODE_STRING_LITERAL);
+    node->value.symbol = symbol;
+    break;
+  default:
+    break;
+  }
+
+  return node;
+}
+
+/*
+return_statement
+  : "return"
+  : "return" expression
+  ;
+*/
+static Node *return_statement(Parser *parser)
+{
+  Node *stmt_return = NULL;
+
+  assert_next_token(parser, TK_KW_RETURN);
+
+  /* TODO TMP */
+  if (!expect(parser, TK_NUMBER)) {
+    /* TODO error handling */
+    skip_until(parser, ';');
+    return stmt_return;
+  }
+
+  stmt_return = AstNode_New(NODE_RETURN_STMT);
+  stmt_return->left = AstNode_New(NODE_EXPR);
+  stmt_return->left->value.number = token_number(parser);
+
+  return stmt_return;
+}
+
+/*
+vardump_statement
+  : "vardump" identifier
+  ;
+*/
+static Node *vardump_statement(Parser *parser)
+{
+  Symbol *symbol = NULL;
+  Node *stmt = NULL;
+
+  assert_next_token(parser, TK_KW_VARDUMP);
+
+  if (!expect(parser, TK_IDENTIFIER)) {
+    parse_error(parser, "missing identifier after 'vardump'");
+    skip_until(parser, ';');
+    return NULL;
+  }
+
+  symbol = SymbolTable_Lookup(
+      symbol_table(parser),
+      token_name(parser));
+
+  if (symbol == NULL) {
+    parse_error(parser, "undefined variable specified for 'vardump'");
+    skip_until(parser, ';');
+    return NULL;
+  }
+
+  stmt = AstNode_New(NODE_VARDUMP);
+  stmt->value.symbol = symbol;
+
+  return stmt;
+}
+
+/*
+function_call
+  : identifier "(" arguments ")"
+  ;
+*/
+static Node * function_call(Parser *parser)
+{
+  Node *node = NULL;
+  Node *args = NULL;
+
+  assert_next_token(parser, '(');
+
+  args = primary_expression(parser);
+
+  assert_next_token(parser, ')');
+
+  node = AstNode_New(NODE_FUNC_CALL);
+  node->left = args;
+
+  return node;
 }
 
 /*
@@ -409,43 +400,41 @@ assignment_or_function_call
 */
 static Node * assignment_or_function_call(Parser *parser)
 {
-  const Token *token = NULL;
   Node *node = NULL;
   Symbol *symbol = NULL;
 
-  token = assert_next_token(parser, TK_IDENTIFIER);
+  assert_next_token(parser, TK_IDENTIFIER);
 
   symbol = SymbolTable_Lookup(
-      parser->table,
-      token->value.name);
+      symbol_table(parser),
+      token_name(parser));
 
   /* TODO TMP */
   {
-    if (strcmp(token->value.name, "print") == 0) {
+    if (strcmp(token_name(parser), "print") == 0) {
       symbol = SymbolTable_Add(
-          parser->table,
-          token->value.name,
+          symbol_table(parser),
+          token_name(parser),
           SYM_FUNCTION);
     }
   }
 
-  token = peek_next_token(parser);
-  switch (token->tag) {
+  switch (peek_next_token(parser)) {
   case '(':
     symbol->type = SYM_FUNCTION;
     node = function_call(parser);
     node->value.symbol = symbol;
     break;
   case '=':
-  /*
+    /* TODO TMP */
     assert_next_token(parser, '=');
     if (expect(parser, TK_NUMBER)) {
-      token = get_current_token(parser);
       node = AstNode_New(NODE_ASSIGN);
+      node->value.symbol = symbol;
       node->left = AstNode_New(NODE_EXPR);
-      node->left->value.number = token->value.number;
+      node->left->value.number = token_number(parser);
     }
-  */
+
     break;
   default:
     parse_error(parser, "unexpected charactors");
@@ -520,6 +509,60 @@ static Node *variable_declaration_list(Parser *parser)
 }
 
 /*
+statement
+  : assignment_or_function_call
+  | return_statement
+  | vardump_statement
+  ;
+*/
+static Node *statement(Parser *parser)
+{
+  Node *stmt = NULL;
+
+  switch (peek_next_token(parser)) {
+
+  case TK_KW_RETURN:
+    stmt = return_statement(parser);
+    break;
+
+  case TK_KW_VARDUMP:
+    stmt = vardump_statement(parser);
+    break;
+
+  case TK_IDENTIFIER:
+    stmt = assignment_or_function_call(parser);
+    break;
+
+  default:
+    return NULL;
+  }
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';'");
+    skip_until(parser, ';');
+  }
+
+  return stmt;
+}
+
+/*
+statement_list
+  : statement statement_list
+  ;
+*/
+static Node *statement_list(Parser *parser)
+{
+  Node *stmt = NULL;
+
+  stmt = statement(parser);
+  if (stmt == NULL) {
+    return NULL;
+  }
+
+  return list_node(stmt, statement_list(parser));
+}
+
+/*
 function_body
   : "{" variable_declaration_list statement_list "}"
   ;
@@ -583,22 +626,20 @@ function_definition
 */
 static Node *function_definition(Parser *parser)
 {
-  const Token *token = NULL;
   Node *func_def = NULL;
   Symbol *symbol = NULL;
 
   assert_next_token(parser, TK_KW_FUNCTION);
 
-  token = get_next_token(parser);
-  if (token->tag != TK_IDENTIFIER) {
+  if (!expect(parser, TK_IDENTIFIER)) {
     parse_error(parser, "missing function name after 'function'");
     skip_until(parser, ':');
     put_back_token(parser); /* put back ':' for function_signature */
   }
 
   symbol = SymbolTable_Add(
-      parser->table,
-      token->value.name,
+      symbol_table(parser),
+      token_name(parser),
       SYM_FUNCTION);
 
   func_def = AstNode_New(NODE_FUNC_DEF);
@@ -620,12 +661,11 @@ program
 */
 static Node *program(Parser *parser)
 {
-  const Token *token = NULL;
+  switch (peek_next_token(parser)) {
 
-  token = peek_next_token(parser);
-  switch (token->tag) {
   case TK_KW_FUNCTION:
     return function_definition(parser);
+
   default:
     break;
   }

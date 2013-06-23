@@ -85,21 +85,32 @@ struct CCode {
 	WriteCode write_post_code;
 };
 
+static void indent(int depth)
+{
+	int i;
+	for (i = 0; i < depth; i++) {
+		printf("  ");
+	}
+}
+
+/* NODE_ASSIGN */
+static void NODE_ASSIGN_pre_code(const struct AstNode *node, int depth)
+{
+  indent(depth);
+	printf("%s = ", node->value.symbol->name);
+}
+static void NODE_ASSIGN_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_ASSIGN_post_code(const struct AstNode *node, int depth)
+{
+	printf(";\n");
+}
+
 /* NODE_EXPR */
 static void NODE_EXPR_pre_code(const struct AstNode *node, int depth)
 {
-	const struct Symbol *symbol = node->value.symbol;
-
-	if (symbol == NULL) {
-		printf("%g", node->value.number);
-		return;
-	}
-
-	switch (symbol->type) {
-	case SYM_STRING_LITERAL:
-		printf("\"%s\"", symbol->name);
-		break;
-	}
+  printf("%g", node->value.number);
 }
 static void NODE_EXPR_in_code(const struct AstNode *node, int depth)
 {
@@ -112,10 +123,8 @@ static void NODE_EXPR_post_code(const struct AstNode *node, int depth)
 static void NODE_FUNC_CALL_pre_code(const struct AstNode *node, int depth)
 {
 	const char *function_name = node->value.symbol->name;
-	int i;
-	for (i = 0; i < depth; i++) {
-		printf("  ");
-	}
+
+  indent(depth);
 
 	if (strcmp(function_name, "print") == 0) {
 		printf("printf(");
@@ -125,10 +134,10 @@ static void NODE_FUNC_CALL_pre_code(const struct AstNode *node, int depth)
 }
 static void NODE_FUNC_CALL_in_code(const struct AstNode *node, int depth)
 {
-	printf(");\n");
 }
 static void NODE_FUNC_CALL_post_code(const struct AstNode *node, int depth)
 {
+	printf(");\n");
 }
 
 /* NODE_FUNC_DEF */
@@ -150,10 +159,7 @@ static void NODE_FUNC_DEF_post_code(const struct AstNode *node, int depth)
 /* NODE_RETURN_STMT */
 static void NODE_RETURN_STMT_pre_code(const struct AstNode *node, int depth)
 {
-	int i;
-	for (i = 0; i < depth; i++) {
-		printf("  ");
-	}
+  indent(depth);
 	printf("return ");
 }
 static void NODE_RETURN_STMT_in_code(const struct AstNode *node, int depth)
@@ -164,14 +170,24 @@ static void NODE_RETURN_STMT_post_code(const struct AstNode *node, int depth)
 	printf(";\n");
 }
 
+/* NODE_STRING_LITERAL */
+static void NODE_STRING_LITERAL_pre_code(const struct AstNode *node, int depth)
+{
+	const struct Symbol *symbol = node->value.symbol;
+  printf("\"%s\"", symbol->name);
+}
+static void NODE_STRING_LITERAL_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_STRING_LITERAL_post_code(const struct AstNode *node, int depth)
+{
+}
+
 /* NODE_VAR_DECL */
 static void NODE_VAR_DECL_pre_code(const struct AstNode *node, int depth)
 {
-	int i;
-	for (i = 0; i < depth; i++) {
-		printf("  ");
-	}
-	printf("int %s = 0", "foo");
+  indent(depth);
+	printf("int %s = 0", node->value.symbol->name);
 }
 static void NODE_VAR_DECL_in_code(const struct AstNode *node, int depth)
 {
@@ -181,19 +197,26 @@ static void NODE_VAR_DECL_post_code(const struct AstNode *node, int depth)
 	printf(";\n");
 }
 
-/* NODE_ASSIGN */
-static void NODE_ASSIGN_pre_code(const struct AstNode *node, int depth)
+/* NODE_VARDUMP */
+static void NODE_VARDUMP_pre_code(const struct AstNode *node, int depth)
 {
-	int i;
-	for (i = 0; i < depth; i++) {
-		printf("  ");
-	}
-	printf("%s = 111", "foo");
+  char c = '\0';
+  indent(depth);
+
+  switch (node->value.symbol->data_type) {
+  case TYPE_INT: c = 'd'; break;
+  default: break;
+  }
+
+  printf("printf(\"#  %s => %%%c\\n\", %s)",
+      node->value.symbol->name,
+      c,
+      node->value.symbol->name);
 }
-static void NODE_ASSIGN_in_code(const struct AstNode *node, int depth)
+static void NODE_VARDUMP_in_code(const struct AstNode *node, int depth)
 {
 }
-static void NODE_ASSIGN_post_code(const struct AstNode *node, int depth)
+static void NODE_VARDUMP_post_code(const struct AstNode *node, int depth)
 {
 	printf(";\n");
 }
@@ -206,7 +229,9 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_FUNC_CALL),
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_RETURN_STMT),
-	CCODE(NODE_VAR_DECL)
+	CCODE(NODE_STRING_LITERAL),
+	CCODE(NODE_VAR_DECL),
+	CCODE(NODE_VARDUMP)
 };
 static const int N_CCODES = sizeof(ccodes)/sizeof(ccodes[0]);
 

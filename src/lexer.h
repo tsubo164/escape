@@ -22,6 +22,7 @@ enum TokenTag {
   TK_KW_STRING,
   TK_KW_RETURN,
   TK_KW_VAR,
+  TK_KW_VARDUMP,
   TK_END_TOKENS
 };
 
