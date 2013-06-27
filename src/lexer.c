@@ -68,9 +68,11 @@ struct Keyword {
   int data_type;
 };
 
+/* TODO should be decoupled from datatype? */
 /* sorted by alphabet */
 static const struct Keyword keywords[] = {
   {"function", TK_KW_FUNCTION, TYPE_NONE},
+  {"if",       TK_KW_IF,       TYPE_NONE},
   {"int",      TK_KW_INT,      TYPE_INT},
   {"return",   TK_KW_RETURN,   TYPE_NONE},
   {"string",   TK_KW_STRING,   TYPE_STRING},
@@ -173,6 +175,28 @@ state_initial:
     case '/':
       goto state_line_comment;
     default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '&':
+    ch = get_next_char(lexer);
+    if (ch == '&') {
+      token->tag = TK_REL_AND;
+      goto state_final;
+    } else {
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '|':
+    ch = get_next_char(lexer);
+    if (ch == '|') {
+      token->tag = TK_REL_OR;
+      goto state_final;
+    } else {
       ch = put_back_char(lexer);
       token->tag = ch;
       goto state_final;

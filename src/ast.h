@@ -9,34 +9,49 @@ See LICENSE and README
 struct Symbol;
 
 enum AstNodeType {
-	NODE_NULL = 0,
-	NODE_ASSIGN,
-	NODE_BLOCK,
-	NODE_EXPR,
-	NODE_FUNC_DEF,
-	NODE_FUNC_CALL,
-	NODE_LIST,
-	NODE_RETURN_STMT,
-	NODE_STRING_LITERAL,
-	NODE_VAR_DECL,
-	NODE_VARDUMP,
-	NODE_END
+  NODE_NULL = 0,
+  /* operators */
+  NODE_ADD,
+  NODE_SUB,
+  NODE_MUL,
+  NODE_DIV,
+  NODE_ASSIGN,
+  /* control structures */
+  NODE_IF,
+  NODE_BLOCK,
+  NODE_EXPR,
+  NODE_FUNC_DEF,
+  NODE_FUNC_CALL,
+  NODE_LIST,
+  NODE_RETURN_STMT,
+  /* literals */
+  NODE_NUMBER_LITERAL,
+  NODE_STRING_LITERAL,
+  NODE_SYMBOL,
+  NODE_VAR_DECL,
+  NODE_VARDUMP,
+  NODE_END
 };
 
 struct AstNode {
-	int type;
-	union {
-		double number;
-		struct Symbol *symbol;
-	} value;
+  int op;
+  union {
+    double number;
+    struct Symbol *symbol;
+  } value;
 
-	struct AstNode *left;
-	struct AstNode *right;
+  struct AstNode *left;
+  struct AstNode *right;
 };
 
-extern struct AstNode *AstNode_Duplicate(const struct AstNode *src);
-extern struct AstNode *AstNode_New(int ast_node_type);
+extern struct AstNode *AstNode_New(int ast_node_op);
 extern void AstNode_Free(struct AstNode *node);
+
+extern int AstNode_Op(const struct AstNode *node);
+extern struct AstNode *AstNode_Left(const struct AstNode *node);
+extern struct AstNode *AstNode_Right(const struct AstNode *node);
+extern struct Symbol *AstNode_Symbol(const struct AstNode *node);
+extern double AstNode_Number(const struct AstNode *node);
 
 extern void AstNode_Print(const struct AstNode *node);
 

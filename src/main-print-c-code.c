@@ -79,7 +79,7 @@ int main(int argc, const char **argv)
 
 typedef void (*WriteCode)(const struct AstNode *node, int depth);
 struct CCode {
-	int ast_node_type;
+	int ast_node_op;
 	WriteCode write_pre_code;
 	WriteCode write_in_code;
 	WriteCode write_post_code;
@@ -91,6 +91,62 @@ static void indent(int depth)
 	for (i = 0; i < depth; i++) {
 		printf("  ");
 	}
+}
+
+/* NODE_ADD */
+static void NODE_ADD_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_ADD_in_code(const struct AstNode *node, int depth)
+{
+	printf(" + ");
+}
+static void NODE_ADD_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_SUB */
+static void NODE_SUB_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_SUB_in_code(const struct AstNode *node, int depth)
+{
+	printf(" - ");
+}
+static void NODE_SUB_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_MUL */
+static void NODE_MUL_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_MUL_in_code(const struct AstNode *node, int depth)
+{
+	printf(" * ");
+}
+static void NODE_MUL_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_DIV */
+static void NODE_DIV_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_DIV_in_code(const struct AstNode *node, int depth)
+{
+	printf(" / ");
+}
+static void NODE_DIV_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
 }
 
 /* NODE_ASSIGN */
@@ -170,6 +226,30 @@ static void NODE_RETURN_STMT_post_code(const struct AstNode *node, int depth)
 	printf(";\n");
 }
 
+/* NODE_SYMBOL */
+static void NODE_SYMBOL_pre_code(const struct AstNode *node, int depth)
+{
+  printf("%s", node->value.symbol->name);
+}
+static void NODE_SYMBOL_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_SYMBOL_post_code(const struct AstNode *node, int depth)
+{
+}
+
+/* NODE_NUMBER_LITERAL */
+static void NODE_NUMBER_LITERAL_pre_code(const struct AstNode *node, int depth)
+{
+  printf("%g", node->value.number);
+}
+static void NODE_NUMBER_LITERAL_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_NUMBER_LITERAL_post_code(const struct AstNode *node, int depth)
+{
+}
+
 /* NODE_STRING_LITERAL */
 static void NODE_STRING_LITERAL_pre_code(const struct AstNode *node, int depth)
 {
@@ -187,7 +267,12 @@ static void NODE_STRING_LITERAL_post_code(const struct AstNode *node, int depth)
 static void NODE_VAR_DECL_pre_code(const struct AstNode *node, int depth)
 {
   indent(depth);
-	printf("int %s = 0", node->value.symbol->name);
+	printf("int %s", node->value.symbol->name);
+  if (node->right == NULL) {
+    printf(" = 0");
+  } else {
+    printf(" = ");
+  }
 }
 static void NODE_VAR_DECL_in_code(const struct AstNode *node, int depth)
 {
@@ -224,11 +309,17 @@ static void NODE_VARDUMP_post_code(const struct AstNode *node, int depth)
 #define CCODE(node_type) \
 	{node_type, node_type##_pre_code, node_type##_in_code, node_type##_post_code}
 static const struct CCode ccodes[] = {
+	CCODE(NODE_ADD),
+	CCODE(NODE_SUB),
+	CCODE(NODE_MUL),
+	CCODE(NODE_DIV),
 	CCODE(NODE_ASSIGN),
 	CCODE(NODE_EXPR),
 	CCODE(NODE_FUNC_CALL),
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_RETURN_STMT),
+	CCODE(NODE_SYMBOL),
+	CCODE(NODE_NUMBER_LITERAL),
 	CCODE(NODE_STRING_LITERAL),
 	CCODE(NODE_VAR_DECL),
 	CCODE(NODE_VARDUMP)
@@ -245,7 +336,7 @@ static void print_code_recursive(const struct AstNode *node, int depth)
 	}
 
 	for (i = 0; i < N_CCODES; i++) {
-		if (ccodes[i].ast_node_type == node->type) {
+		if (ccodes[i].ast_node_op == node->op) {
 			ccode = &ccodes[i];
 			break;
 		}

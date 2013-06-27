@@ -15,9 +15,13 @@ enum TokenTag {
   TK_IDENTIFIER,
   TK_NUMBER,
   TK_STRING,
+  /* relational operators */
+  TK_REL_AND,
+  TK_REL_OR,
   /* keywords */
   TK_BEGIN_KEYWORDS,
   TK_KW_FUNCTION,
+  TK_KW_IF,
   TK_KW_INT,
   TK_KW_STRING,
   TK_KW_RETURN,
