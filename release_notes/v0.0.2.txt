@@ -1,0 +1,15 @@
+The Escape programming language v0.0.2(Alpha) Release Notes
+===========================================================
+
+New features since v0.0.1
+-------------------------
+ * Support integer varialbe and expression.
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * variable
+ * if statement
+ * function definition
+ * struct
+
