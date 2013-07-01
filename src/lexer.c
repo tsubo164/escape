@@ -20,6 +20,7 @@ struct StringBuffer {
   int alloc;
   int len;
 };
+
 static struct StringBuffer *StringBuffer_New(void)
 {
   struct StringBuffer *strbuf = NULL;
@@ -35,6 +36,7 @@ static struct StringBuffer *StringBuffer_New(void)
 
   return strbuf;
 }
+
 static void StringBuffer_AppendChar(struct StringBuffer *strbuf, char c)
 {
   if (strbuf->len + 1 >= strbuf->alloc) {
@@ -45,6 +47,7 @@ static void StringBuffer_AppendChar(struct StringBuffer *strbuf, char c)
   strbuf->len++;
   strbuf->c[strbuf->len] = '\0';
 }
+
 static void StringBuffer_Clear(struct StringBuffer *strbuf)
 {
   if (strbuf->c == NULL) {
@@ -53,6 +56,7 @@ static void StringBuffer_Clear(struct StringBuffer *strbuf)
   strbuf->len = 0;
   strbuf->c[0] = '\0';
 }
+
 static void StringBuffer_Free(struct StringBuffer *strbuf)
 {
   if (strbuf == NULL) {
@@ -180,12 +184,67 @@ state_initial:
       goto state_final;
     }
 
+  case '<':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '=':
+      token->tag = TK_LE;
+      goto state_final;
+    case '<':
+      token->tag = TK_LSHIFT;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '>':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '=':
+      token->tag = TK_GE;
+      goto state_final;
+    case '>':
+      token->tag = TK_RSHIFT;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '=':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '=':
+      token->tag = TK_EQ;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '!':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '=':
+      token->tag = TK_NE;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
   case '&':
     ch = get_next_char(lexer);
-    if (ch == '&') {
-      token->tag = TK_REL_AND;
+    switch (ch) {
+    case '&':
+      token->tag = TK_AND;
       goto state_final;
-    } else {
+    default:
       ch = put_back_char(lexer);
       token->tag = ch;
       goto state_final;
@@ -193,10 +252,11 @@ state_initial:
 
   case '|':
     ch = get_next_char(lexer);
-    if (ch == '|') {
-      token->tag = TK_REL_OR;
+    switch (ch) {
+    case '|':
+      token->tag = TK_OR;
       goto state_final;
-    } else {
+    default:
       ch = put_back_char(lexer);
       token->tag = ch;
       goto state_final;

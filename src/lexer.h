@@ -8,6 +8,28 @@ See LICENSE and README
 
 #include <stdio.h>
 
+#define TOKEN_LIST(t_) \
+  t_(TK_COMMENT,        "") \
+  t_(TK_IDENTIFIER,     "") \
+  t_(TK_NUMBER,         "") \
+  t_(TK_STRING,         "") \
+  /* relational operators */ \
+  t_(TK_LE,             "<") \
+  t_(TK_GE,             ">") \
+  t_(TK_EQ,             "==") \
+  t_(TK_NE,             "!=") \
+  t_(TK_AND,            "&&") \
+  t_(TK_OR,             "||") \
+  /* keywords */ \
+  t_(TK_BEGIN_KEYWORDS, "") \
+  t_(TK_KW_FUNCTION,    "function") \
+  t_(TK_KW_IF,          "if") \
+  t_(TK_KW_INT,         "int") \
+  t_(TK_KW_STRING,      "string") \
+  t_(TK_KW_RETURN,      "return") \
+  t_(TK_KW_VAR,         "var") \
+  t_(TK_KW_VARDUMP,     "vardump")
+
 enum TokenTag {
   /* tokens */
   TK_BEGIN_TOKENS = 256,
@@ -16,8 +38,14 @@ enum TokenTag {
   TK_NUMBER,
   TK_STRING,
   /* relational operators */
-  TK_REL_AND,
-  TK_REL_OR,
+  TK_LSHIFT,
+  TK_RSHIFT,
+  TK_LE,
+  TK_GE,
+  TK_EQ,
+  TK_NE,
+  TK_AND,
+  TK_OR,
   /* keywords */
   TK_BEGIN_KEYWORDS,
   TK_KW_FUNCTION,

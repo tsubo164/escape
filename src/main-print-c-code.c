@@ -93,6 +93,188 @@ static void indent(int depth)
 	}
 }
 
+/* NODE_LSHIFT */
+static void NODE_LSHIFT_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_LSHIFT_in_code(const struct AstNode *node, int depth)
+{
+	printf(" << ");
+}
+static void NODE_LSHIFT_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_RSHIFT */
+static void NODE_RSHIFT_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_RSHIFT_in_code(const struct AstNode *node, int depth)
+{
+	printf(" >> ");
+}
+static void NODE_RSHIFT_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_LT */
+static void NODE_LT_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_LT_in_code(const struct AstNode *node, int depth)
+{
+	printf(" < ");
+}
+static void NODE_LT_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_GT */
+static void NODE_GT_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_GT_in_code(const struct AstNode *node, int depth)
+{
+	printf(" > ");
+}
+static void NODE_GT_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_LE */
+static void NODE_LE_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_LE_in_code(const struct AstNode *node, int depth)
+{
+	printf(" <= ");
+}
+static void NODE_LE_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_GE */
+static void NODE_GE_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_GE_in_code(const struct AstNode *node, int depth)
+{
+	printf(" >= ");
+}
+static void NODE_GE_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_EQ */
+static void NODE_EQ_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_EQ_in_code(const struct AstNode *node, int depth)
+{
+	printf(" == ");
+}
+static void NODE_EQ_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_NE */
+static void NODE_NE_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_NE_in_code(const struct AstNode *node, int depth)
+{
+	printf(" != ");
+}
+static void NODE_NE_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_BITWISE_AND */
+static void NODE_BITWISE_AND_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_BITWISE_AND_in_code(const struct AstNode *node, int depth)
+{
+	printf(" & ");
+}
+static void NODE_BITWISE_AND_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_BITWISE_XOR */
+static void NODE_BITWISE_XOR_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_BITWISE_XOR_in_code(const struct AstNode *node, int depth)
+{
+	printf(" ^ ");
+}
+static void NODE_BITWISE_XOR_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_BITWISE_OR */
+static void NODE_BITWISE_OR_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_BITWISE_OR_in_code(const struct AstNode *node, int depth)
+{
+	printf(" | ");
+}
+static void NODE_BITWISE_OR_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_OR */
+static void NODE_OR_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_OR_in_code(const struct AstNode *node, int depth)
+{
+	printf(" || ");
+}
+static void NODE_OR_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
+/* NODE_AND */
+static void NODE_AND_pre_code(const struct AstNode *node, int depth)
+{
+	printf("(");
+}
+static void NODE_AND_in_code(const struct AstNode *node, int depth)
+{
+	printf(" && ");
+}
+static void NODE_AND_post_code(const struct AstNode *node, int depth)
+{
+	printf(")");
+}
+
 /* NODE_ADD */
 static void NODE_ADD_pre_code(const struct AstNode *node, int depth)
 {
@@ -309,6 +491,19 @@ static void NODE_VARDUMP_post_code(const struct AstNode *node, int depth)
 #define CCODE(node_type) \
 	{node_type, node_type##_pre_code, node_type##_in_code, node_type##_post_code}
 static const struct CCode ccodes[] = {
+	CCODE(NODE_LSHIFT),
+	CCODE(NODE_RSHIFT),
+	CCODE(NODE_LT),
+	CCODE(NODE_GT),
+	CCODE(NODE_LE),
+	CCODE(NODE_GE),
+	CCODE(NODE_EQ),
+	CCODE(NODE_NE),
+	CCODE(NODE_BITWISE_AND),
+	CCODE(NODE_BITWISE_XOR),
+	CCODE(NODE_BITWISE_OR),
+	CCODE(NODE_OR),
+	CCODE(NODE_AND),
 	CCODE(NODE_ADD),
 	CCODE(NODE_SUB),
 	CCODE(NODE_MUL),
