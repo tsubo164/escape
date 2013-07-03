@@ -97,6 +97,18 @@ static void print_node_recursive(const struct AstNode *node, int depth)
   case NODE_NULL:
     printf("null");
     break;
+  case NODE_ADD:
+    printf("+");
+    break;
+  case NODE_SUB:
+    printf("-");
+    break;
+  case NODE_MUL:
+    printf("*");
+    break;
+  case NODE_NUMBER_LITERAL:
+    printf("%g", node->value.number);
+    break;
   case NODE_ASSIGN:
     printf("assignment");
     break;

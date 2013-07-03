@@ -18,9 +18,9 @@ typedef struct Symbol Symbol;
 typedef struct AstNode Node;
 typedef struct Token Token;
 
-static Node * program(Parser *parser);
+static Node *program(Parser *parser);
 static Node *expression(Parser *parser);
-static Node *statement_list(Parser *parser);
+static Node *statement(Parser *parser);
 
 typedef struct ErrorInfo ErrorInfo;
 enum { TOKEN_BUF_SIZE = 2 };
@@ -232,6 +232,14 @@ static int assert_next_token(Parser *parser, int expected_token_tag)
   return token_tag(parser);
 }
 
+static Node *new_node(int op, Node *lhs, Node *rhs)
+{
+  Node *node = AstNode_New(op);
+  node->left  = lhs;
+  node->right = rhs;
+  return node;
+}
+
 static Symbol *new_symbol(Parser *parser, int symbol_type)
 {
   Symbol *symbol = SymbolTable_Add(
@@ -251,14 +259,6 @@ static Node *list_node(Node *current, Node *next)
   Node *node = AstNode_New(NODE_LIST);
   node->left  = current;
   node->right = next;
-  return node;
-}
-
-static Node *block_node(Node *decl_list, Node *stmt_list)
-{
-  Node *node = AstNode_New(NODE_BLOCK);
-  node->left  = decl_list;
-  node->right = stmt_list;
   return node;
 }
 
@@ -333,21 +333,14 @@ multiplicative_expression
 */
 static Node *multiplicative_expression(Parser *parser)
 {
-	Node *current_root = primary_expression(parser);
+  Node *current_root = primary_expression(parser);
 
-	while (expect(parser, '*') || expect(parser, '/')) {
-		const int node_type = token_tag(parser) == '*' ? NODE_MUL : NODE_DIV;
-		Node *new_factor = NULL;
-		Node *new_term = NULL;
+  while (expect(parser, '*') || expect(parser, '/')) {
+    const int new_op = token_tag(parser) == '*' ? NODE_MUL : NODE_DIV;
+    current_root = new_node(new_op, current_root, primary_expression(parser));
+  }
 
-		new_factor = primary_expression(parser);
-		new_term = AstNode_New(node_type);
-		new_term->left = current_root;
-		new_term->right = new_factor;
-		current_root = new_term;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -359,21 +352,14 @@ additive_expression
 */
 static Node *additive_expression(Parser *parser)
 {
-	Node *current_root = multiplicative_expression(parser);
+  Node *current_root = multiplicative_expression(parser);
 
-	while (expect(parser, '+') || expect(parser, '-')) {
-		const int node_type = token_tag(parser) == '+' ? NODE_ADD : NODE_SUB;
-		Node *new_term = NULL;
-		Node *new_expr = NULL;
+  while (expect(parser, '+') || expect(parser, '-')) {
+    const int new_op = token_tag(parser) == '+' ? NODE_ADD : NODE_SUB;
+    current_root = new_node(new_op, current_root, multiplicative_expression(parser));
+  }
 
-		new_term = multiplicative_expression(parser);
-		new_expr = AstNode_New(node_type);
-		new_expr->left = current_root;
-		new_expr->right = new_term;
-		current_root = new_expr;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -385,21 +371,14 @@ shift_expression
 */
 static Node *shift_expression(Parser *parser)
 {
-	Node *current_root = additive_expression(parser);
+  Node *current_root = additive_expression(parser);
 
-	while (expect(parser, TK_LSHIFT) || expect(parser, TK_RSHIFT)) {
-		const int node_type = token_tag(parser) == TK_LSHIFT ? NODE_LSHIFT : NODE_RSHIFT;
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, TK_LSHIFT) || expect(parser, TK_RSHIFT)) {
+    const int new_op = token_tag(parser) == TK_LSHIFT ? NODE_LSHIFT : NODE_RSHIFT;
+    current_root = new_node(new_op, current_root, additive_expression(parser));
+  }
 
-		new_expr = additive_expression(parser);
-		new_op = AstNode_New(node_type);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -413,30 +392,23 @@ relational_expression
 */
 static Node *relational_expression(Parser *parser)
 {
-	Node *current_root = shift_expression(parser);
+  Node *current_root = shift_expression(parser);
 
-	while (expect(parser, '<')   ||
+  while (expect(parser, '<')   ||
          expect(parser, '>')   ||
          expect(parser, TK_LE) ||
          expect(parser, TK_GE)) {
-		int node_type = NODE_NULL;
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+    int new_op = NODE_NULL;
     switch (token_tag(parser)) {
-    case '<':   node_type = NODE_LT; break;
-    case '>':   node_type = NODE_GT; break;
-    case TK_LE: node_type = NODE_LE; break;
-    case TK_GE: node_type = NODE_GE; break;
+    case '<':   new_op = NODE_LT; break;
+    case '>':   new_op = NODE_GT; break;
+    case TK_LE: new_op = NODE_LE; break;
+    case TK_GE: new_op = NODE_GE; break;
     }
+    current_root = new_node(new_op, current_root, shift_expression(parser));
+  }
 
-		new_expr = shift_expression(parser);
-		new_op = AstNode_New(node_type);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -448,21 +420,14 @@ equality_expression
 */
 static Node *equality_expression(Parser *parser)
 {
-	Node *current_root = relational_expression(parser);
+  Node *current_root = relational_expression(parser);
 
-	while (expect(parser, TK_EQ) || expect(parser, TK_NE)) {
-		const int node_type = token_tag(parser) == TK_EQ ? NODE_EQ : NODE_NE;
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, TK_EQ) || expect(parser, TK_NE)) {
+    const int new_op = token_tag(parser) == TK_EQ ? NODE_EQ : NODE_NE;
+    current_root = new_node(new_op, current_root, relational_expression(parser));
+  }
 
-		new_expr = relational_expression(parser);
-		new_op = AstNode_New(node_type);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -473,20 +438,13 @@ bitwise_and_expression
 */
 static Node *bitwise_and_expression(Parser *parser)
 {
-	Node *current_root = equality_expression(parser);
+  Node *current_root = equality_expression(parser);
 
-	while (expect(parser, '&')) {
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, '&')) {
+    current_root = new_node(NODE_BITWISE_AND, current_root, equality_expression(parser));
+  }
 
-		new_expr = equality_expression(parser);
-		new_op = AstNode_New(NODE_BITWISE_AND);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -497,20 +455,13 @@ bitwise_xor_expression
 */
 static Node *bitwise_xor_expression(Parser *parser)
 {
-	Node *current_root = bitwise_and_expression(parser);
+  Node *current_root = bitwise_and_expression(parser);
 
-	while (expect(parser, '^')) {
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, '^')) {
+    current_root = new_node(NODE_BITWISE_XOR, current_root, bitwise_and_expression(parser));
+  }
 
-		new_expr = bitwise_and_expression(parser);
-		new_op = AstNode_New(NODE_BITWISE_XOR);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -521,20 +472,13 @@ bitwise_or_expression
 */
 static Node *bitwise_or_expression(Parser *parser)
 {
-	Node *current_root = bitwise_xor_expression(parser);
+  Node *current_root = bitwise_xor_expression(parser);
 
-	while (expect(parser, '|')) {
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, '|')) {
+    current_root = new_node(NODE_BITWISE_OR, current_root, bitwise_xor_expression(parser));
+  }
 
-		new_expr = bitwise_xor_expression(parser);
-		new_op = AstNode_New(NODE_BITWISE_OR);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -545,20 +489,13 @@ logical_and_expression
 */
 static Node *logical_and_expression(Parser *parser)
 {
-	Node *current_root = bitwise_or_expression(parser);
+  Node *current_root = bitwise_or_expression(parser);
 
-	while (expect(parser, TK_AND)) {
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, TK_AND)) {
+    current_root = new_node(NODE_AND, current_root, bitwise_or_expression(parser));
+  }
 
-		new_expr = bitwise_or_expression(parser);
-		new_op = AstNode_New(NODE_AND);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -569,20 +506,13 @@ logical_or_expression
 */
 static Node *logical_or_expression(Parser *parser)
 {
-	Node *current_root = logical_and_expression(parser);
+  Node *current_root = logical_and_expression(parser);
 
-	while (expect(parser, TK_OR)) {
-		Node *new_expr = NULL;
-		Node *new_op = NULL;
+  while (expect(parser, TK_OR)) {
+    current_root = new_node(NODE_OR, current_root, logical_and_expression(parser));
+  }
 
-		new_expr = logical_and_expression(parser);
-		new_op = AstNode_New(NODE_OR);
-		new_op->left = current_root;
-		new_op->right = new_expr;
-		current_root = new_op;
-	}
-
-	return current_root;
+  return current_root;
 }
 
 /*
@@ -592,9 +522,9 @@ expression
 */
 static Node *expression(Parser *parser)
 {
-	Node *node = logical_or_expression(parser);
+  Node *node = logical_or_expression(parser);
 
-	return node;
+  return node;
 }
 
 /*
@@ -845,6 +775,23 @@ static Node *variable_declaration_list(Parser *parser)
 }
 
 /*
+statement_list
+  : statement
+  | statement statement_list
+  ;
+*/
+static Node *statement_list(Parser *parser)
+{
+  Node *stmt = statement(parser);
+
+  if (stmt == NULL) {
+    return NULL;
+  }
+
+  return list_node(stmt, statement_list(parser));
+}
+
+/*
 block_statement
   : '{' variable_declaration_list statement_list '}'
   ;
@@ -853,6 +800,7 @@ static Node *block_statement(Parser *parser)
 {
   Node *decl_list = NULL;
   Node *stmt_list = NULL;
+  Node *block = NULL;
 
   if (!expect(parser, '{')) {
     parse_error(parser, "missing '{'");
@@ -866,12 +814,52 @@ static Node *block_statement(Parser *parser)
     parse_error(parser, "missing '}'");
   }
 
-  return block_node(decl_list, stmt_list);
+  block = AstNode_New(NODE_BLOCK);
+  block->left  = decl_list;
+  block->right = stmt_list;
+  return block;
+}
+
+#if 0
+static Node *else_clause(Parser *parser)
+{
+  return NULL;
 }
 
 /*
+else_clause_list
+  : TK_KW_IF '(' expression ')' block_statement else_clause_list
+  ;
+*/
+static Node *else_clause_list(Parser *parser)
+{
+  Node *stmt = else_clause(parser);
+
+  if (stmt == NULL) {
+    return NULL;
+  }
+
+  return list_node(stmt, statement_list(parser));
+#if 0
+  while (expect(parser, TK_KW_ELSE)) {
+    if (peek_next_token(parser) != '{') {
+      parse_error(parser, "missing '{' after 'else'");
+      skip_until(parser, '}');
+    }
+ 
+    if (peek_next_token(parser) != TK_KW_IF) {
+      block = if_statement(parser);
+    } else {
+      block = block_statement(parser);
+    }
+  }
+#endif
+}
+#endif
+
+/*
 if_statement
-  : TK_KW_IF '(' expression ')' block_node else_clause_list
+  : TK_KW_IF '(' expression ')' block_statement else_clause_list
   ;
 */
 static Node *if_statement(Parser *parser)
@@ -883,16 +871,14 @@ static Node *if_statement(Parser *parser)
   assert_next_token(parser, TK_KW_IF);
 
   if (!expect(parser, '(')) {
-    parse_error(parser, "missing ';' at the end of return statement");
+    parse_error(parser, "missing '(' after 'if'");
     skip_until(parser, ')');
   }
 
-/*
   cond = expression(parser);
-*/
 
   if (!expect(parser, ')')) {
-    parse_error(parser, "missing ';' at the end of return statement");
+    parse_error(parser, "missing ')' after conditional expression");
     skip_until(parser, '{');
     put_back_token(parser);
   }
@@ -943,45 +929,14 @@ static Node *statement(Parser *parser)
 }
 
 /*
-statement_list
-  : statement
-  | statement statement_list
-  ;
-*/
-static Node *statement_list(Parser *parser)
-{
-  Node *stmt = statement(parser);
-
-  if (stmt == NULL) {
-    return NULL;
-  }
-
-  return list_node(stmt, statement_list(parser));
-}
-
-/*
 function_body
   : '{' variable_declaration_list statement_list '}'
   ;
 */
+/* TODO should use block_statement? */
 static Node *function_body(Parser *parser)
 {
-  Node *decl_list = NULL;
-  Node *stmt_list = NULL;
-
-  if (!expect(parser, '{')) {
-    parse_error(parser, "missing '{'");
-    skip_until(parser, ';');
-  }
-
-  decl_list = variable_declaration_list(parser);
-  stmt_list = statement_list(parser);
-
-  if (!expect(parser, '}')) {
-    parse_error(parser, "missing '}'");
-  }
-
-  return block_node(decl_list, stmt_list);
+  return block_statement(parser);
 }
 
 /*

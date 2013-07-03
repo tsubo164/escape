@@ -394,6 +394,34 @@ static void NODE_FUNC_DEF_post_code(const struct AstNode *node, int depth)
 	printf("}\n");
 }
 
+/* NODE_BLOCK */
+static void NODE_BLOCK_pre_code(const struct AstNode *node, int depth)
+{
+	printf("{\n");
+}
+static void NODE_BLOCK_in_code(const struct AstNode *node, int depth)
+{
+}
+static void NODE_BLOCK_post_code(const struct AstNode *node, int depth)
+{
+	printf("}\n");
+}
+
+/* NODE_IF */
+static void NODE_IF_pre_code(const struct AstNode *node, int depth)
+{
+  indent(depth);
+	printf("if (");
+}
+static void NODE_IF_in_code(const struct AstNode *node, int depth)
+{
+	printf(") ");
+}
+static void NODE_IF_post_code(const struct AstNode *node, int depth)
+{
+	printf("\n");
+}
+
 /* NODE_RETURN_STMT */
 static void NODE_RETURN_STMT_pre_code(const struct AstNode *node, int depth)
 {
@@ -512,6 +540,8 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_EXPR),
 	CCODE(NODE_FUNC_CALL),
 	CCODE(NODE_FUNC_DEF),
+	CCODE(NODE_IF),
+	CCODE(NODE_BLOCK),
 	CCODE(NODE_RETURN_STMT),
 	CCODE(NODE_SYMBOL),
 	CCODE(NODE_NUMBER_LITERAL),
