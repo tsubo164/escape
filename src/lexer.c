@@ -265,6 +265,30 @@ state_initial:
       goto state_final;
     }
 
+  case '+':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '+':
+      token->tag = TK_INC;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
+  case '-':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '-':
+      token->tag = TK_DEC;
+      goto state_final;
+    default:
+      ch = put_back_char(lexer);
+      token->tag = ch;
+      goto state_final;
+    }
+
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     ch = scan_number(lexer, token);

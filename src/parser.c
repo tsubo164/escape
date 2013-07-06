@@ -325,19 +325,64 @@ static Node *primary_expression(Parser *parser)
 }
 
 /*
-multiplicative_expression
+postfix_expression
   : primary_expression
-  | multiplicative_expression '*' primary_expression
-  | multiplicative_expression '/' primary_expression
+  | TK_INC primary_expression
+  | TK_DEC primary_expression
+  ;
+*/
+static Node *postfix_expression(Parser *parser)
+{
+  Node *root = primary_expression(parser);
+
+  if (expect(parser, TK_INC) || expect(parser, TK_DEC)) {
+    const int new_op = token_tag(parser) == TK_INC ? NODE_POST_INC : NODE_POST_DEC;
+    root = new_node(new_op, root, NULL);
+  }
+
+  return root;
+}
+
+/*
+unary_expression
+  : postfix_expression
+  | TK_INC primary_expression
+  | TK_DEC primary_expression
+  ;
+*/
+static Node *unary_expression(Parser *parser)
+{
+  Node *root = NULL;
+
+  if (expect(parser, TK_INC) || expect(parser, TK_DEC)) {
+    const int new_op = token_tag(parser) == TK_INC ? NODE_INC : NODE_DEC;
+    root = new_node(new_op, root, primary_expression(parser));
+  } else {
+    root = postfix_expression(parser);
+  }
+
+  return root;
+}
+
+/*
+multiplicative_expression
+  : unary_expression
+  | multiplicative_expression '*' unary_expression
+  | multiplicative_expression '/' unary_expression
   ;
 */
 static Node *multiplicative_expression(Parser *parser)
 {
-  Node *root = primary_expression(parser);
+  Node *root = unary_expression(parser);
 
-  while (expect(parser, '*') || expect(parser, '/')) {
-    const int new_op = token_tag(parser) == '*' ? NODE_MUL : NODE_DIV;
-    root = new_node(new_op, root, primary_expression(parser));
+  while (expect(parser, '*') || expect(parser, '/') || expect(parser, '%')) {
+    int new_op = NODE_NULL;
+    switch (token_tag(parser)) {
+    case '*': new_op = NODE_MUL; break;
+    case '/': new_op = NODE_DIV; break;
+    case '%': new_op = NODE_MOD; break;
+    }
+    root = new_node(new_op, root, unary_expression(parser));
   }
 
   return root;

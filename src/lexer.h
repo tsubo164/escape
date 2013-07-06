@@ -15,7 +15,9 @@ enum TokenTag {
   TK_IDENTIFIER,
   TK_NUMBER,
   TK_STRING_LITERAL,
-  /* relational operators */
+  /* operators */
+  TK_INC,
+  TK_DEC,
   TK_LSHIFT,
   TK_RSHIFT,
   TK_LE,

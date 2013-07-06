@@ -11,6 +11,10 @@ struct Symbol;
 enum AstNodeType {
   NODE_NULL = 0,
   /* operators */
+  NODE_POST_INC,
+  NODE_POST_DEC,
+  NODE_INC,
+  NODE_DEC,
   NODE_LSHIFT,
   NODE_RSHIFT,
   NODE_LT,
@@ -28,6 +32,7 @@ enum AstNodeType {
   NODE_SUB,
   NODE_MUL,
   NODE_DIV,
+  NODE_MOD,
   NODE_ASSIGN,
   /* control structures */
   NODE_IF,

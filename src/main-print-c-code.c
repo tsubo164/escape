@@ -99,6 +99,60 @@ static void indent(Context *cxt)
 	}
 }
 
+/* NODE_POST_INC */
+static void NODE_POST_INC_pre_code(const struct AstNode *node, Context *cxt)
+{
+	printf("((");
+}
+static void NODE_POST_INC_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_POST_INC_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(")++)");
+}
+
+/* NODE_POST_DEC */
+static void NODE_POST_DEC_pre_code(const struct AstNode *node, Context *cxt)
+{
+	printf("((");
+}
+static void NODE_POST_DEC_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_POST_DEC_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(")--)");
+}
+
+/* NODE_INC */
+static void NODE_INC_pre_code(const struct AstNode *node, Context *cxt)
+{
+	printf("(");
+}
+static void NODE_INC_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf("++(");
+}
+static void NODE_INC_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf("))");
+}
+
+/* NODE_DEC */
+static void NODE_DEC_pre_code(const struct AstNode *node, Context *cxt)
+{
+	printf("(");
+}
+static void NODE_DEC_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf("--(");
+}
+static void NODE_DEC_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf("))");
+}
+
 /* NODE_LSHIFT */
 static void NODE_LSHIFT_pre_code(const struct AstNode *node, Context *cxt)
 {
@@ -333,6 +387,20 @@ static void NODE_DIV_in_code(const struct AstNode *node, Context *cxt)
 	printf(" / ");
 }
 static void NODE_DIV_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(")");
+}
+
+/* NODE_MOD */
+static void NODE_MOD_pre_code(const struct AstNode *node, Context *cxt)
+{
+	printf("(");
+}
+static void NODE_MOD_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf(" %% ");
+}
+static void NODE_MOD_post_code(const struct AstNode *node, Context *cxt)
 {
 	printf(")");
 }
@@ -591,6 +659,10 @@ static void NODE_VARDUMP_post_code(const struct AstNode *node, Context *cxt)
 #define CCODE(node_type) \
 	{node_type, node_type##_pre_code, node_type##_in_code, node_type##_post_code}
 static const struct CCode ccodes[] = {
+	CCODE(NODE_POST_INC),
+	CCODE(NODE_POST_DEC),
+	CCODE(NODE_INC),
+	CCODE(NODE_DEC),
 	CCODE(NODE_LSHIFT),
 	CCODE(NODE_RSHIFT),
 	CCODE(NODE_LT),
@@ -608,6 +680,7 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_SUB),
 	CCODE(NODE_MUL),
 	CCODE(NODE_DIV),
+	CCODE(NODE_MOD),
 	CCODE(NODE_ASSIGN),
 	CCODE(NODE_EXPR),
 	CCODE(NODE_FUNC_CALL),
