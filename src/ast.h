@@ -31,6 +31,7 @@ enum AstNodeType {
   NODE_ASSIGN,
   /* control structures */
   NODE_IF,
+  NODE_COND,
   NODE_BLOCK,
   NODE_EXPR,
   NODE_FUNC_DEF,

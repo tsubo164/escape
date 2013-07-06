@@ -411,15 +411,29 @@ static void NODE_BLOCK_post_code(const struct AstNode *node, int depth)
 static void NODE_IF_pre_code(const struct AstNode *node, int depth)
 {
   indent(depth);
-	printf("if (");
+	printf("if");
 }
 static void NODE_IF_in_code(const struct AstNode *node, int depth)
 {
-	printf(") ");
+	printf(" else {");
 }
 static void NODE_IF_post_code(const struct AstNode *node, int depth)
 {
-	printf("\n");
+	printf("}\n");
+}
+
+/* NODE_COND */
+static void NODE_COND_pre_code(const struct AstNode *node, int depth)
+{
+	printf(" (");
+}
+static void NODE_COND_in_code(const struct AstNode *node, int depth)
+{
+	printf(") {");
+}
+static void NODE_COND_post_code(const struct AstNode *node, int depth)
+{
+	printf("}\n");
 }
 
 /* NODE_RETURN_STMT */
@@ -541,6 +555,7 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_FUNC_CALL),
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_IF),
+	CCODE(NODE_COND),
 	CCODE(NODE_BLOCK),
 	CCODE(NODE_RETURN_STMT),
 	CCODE(NODE_SYMBOL),
