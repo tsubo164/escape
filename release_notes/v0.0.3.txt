@@ -1,0 +1,15 @@
+The Escape programming language v0.0.3(Alpha) Release Notes
+===========================================================
+
+New features since v0.0.2
+-------------------------
+ * Implemented if statement.
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * variable
+ * for statement
+ * function definition
+ * struct
+
