@@ -8,41 +8,13 @@ See LICENSE and README
 
 #include <stdio.h>
 
-#define TOKEN_LIST(tk_, kw_) \
-  tk_(TK_EOS,            "") \
-  tk_(TK_COMMENT,        "") \
-  tk_(TK_IDENTIFIER,     "") \
-  tk_(TK_NUMBER,         "") \
-  tk_(TK_STRING_LITERAL, "") \
-  /* operators */ \
-  tk_(MUL,               "*") \
-  tk_(DIV,               "/") \
-  tk_(ADD,               "+") \
-  tk_(SUB,               "-") \
-  tk_(TK_LSHIFT,         "<<") \
-  tk_(TK_RSHIFT,         ">>") \
-  tk_(TK_LE,             "<=") \
-  tk_(TK_GE,             ">=") \
-  tk_(TK_EQ,             "==") \
-  tk_(TK_NE,             "!=") \
-  tk_(TK_AND,            "&&") \
-  tk_(TK_OR,             "||") \
-  /* keywords */ \
-  kw_(TK_FUNCTION,       "function") \
-  kw_(TK_IF,             "if") \
-  kw_(TK_INT,            "int") \
-  kw_(TK_STRING,         "string") \
-  kw_(TK_RETURN,         "return") \
-  kw_(TK_VAR,            "var") \
-  kw_(TK_VARDUMP,        "vardump")
-
 enum TokenTag {
   /* tokens */
   TK_BEGIN_TOKENS = 256,
   TK_COMMENT,
   TK_IDENTIFIER,
   TK_NUMBER,
-  TK_STRING,
+  TK_STRING_LITERAL,
   /* relational operators */
   TK_LSHIFT,
   TK_RSHIFT,
@@ -54,14 +26,15 @@ enum TokenTag {
   TK_OR,
   /* keywords */
   TK_BEGIN_KEYWORDS,
-  TK_KW_ELSE,
-  TK_KW_FUNCTION,
-  TK_KW_IF,
-  TK_KW_INT,
-  TK_KW_STRING,
-  TK_KW_RETURN,
-  TK_KW_VAR,
-  TK_KW_VARDUMP,
+  TK_ELSE,
+  TK_FUNCTION,
+  TK_IF,
+  TK_INT,
+  TK_STRING,
+  TK_RETURN,
+  TK_VAR,
+  TK_VARDUMP,
+  TK_WHILE,
   TK_END_TOKENS
 };
 

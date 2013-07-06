@@ -538,7 +538,7 @@ static Node * argument_list(Parser *parser)
 
   switch (get_next_token(parser)) {
 
-  case TK_STRING:
+  case TK_STRING_LITERAL:
     symbol = SymbolTable_Add(
         symbol_table(parser),
         token_string(parser),
@@ -556,15 +556,15 @@ static Node * argument_list(Parser *parser)
 
 /*
 return_statement
-  : TK_KW_RETURN
-  | TK_KW_RETURN expression
+  : TK_RETURN
+  | TK_RETURN expression
   ;
 */
 static Node *return_statement(Parser *parser)
 {
   Node *stmt_return = NULL;
 
-  assert_next_token(parser, TK_KW_RETURN);
+  assert_next_token(parser, TK_RETURN);
 
   /* TODO TMP */
   if (!expect(parser, TK_NUMBER)) {
@@ -595,7 +595,7 @@ static Node *vardump_statement(Parser *parser)
   Symbol *symbol = NULL;
   Node *stmt = NULL;
 
-  assert_next_token(parser, TK_KW_VARDUMP);
+  assert_next_token(parser, TK_VARDUMP);
 
   if (!expect(parser, TK_IDENTIFIER)) {
     parse_error(parser, "missing identifier after 'vardump'");
@@ -716,7 +716,7 @@ static Node *variable_declaration(Parser *parser)
   Node *init_expr = NULL;
   Node *node = NULL;
 
-  if (!expect(parser, TK_KW_VAR)) {
+  if (!expect(parser, TK_VAR)) {
     return NULL;
   }
 
@@ -820,50 +820,10 @@ static Node *block_statement(Parser *parser)
   return block;
 }
 
-#if 0
-static Node *else_clause(Parser *parser)
-{
-  if (!expect(parser, TK_KW_ELSE)) {
-    return NULL;
-  }
-
-  return statement(parser);
-}
-
-/*
-else_clause_list
-  : TK_KW_IF '(' expression ')' block_statement else_clause_list
-  ;
-*/
-static Node *else_clause_list(Parser *parser)
-{
-  Node *stmt = else_clause(parser);
-
-  if (stmt == NULL) {
-    return NULL;
-  }
-
-  return list_node(stmt, else_clause_list(parser));
-#if 0
-  while (expect(parser, TK_KW_ELSE)) {
-    if (peek_next_token(parser) != '{') {
-      parse_error(parser, "missing '{' after 'else'");
-      skip_until(parser, '}');
-    }
- 
-    if (peek_next_token(parser) != TK_KW_IF) {
-      block = if_statement(parser);
-    } else {
-      block = block_statement(parser);
-    }
-  }
-#endif
-}
-#endif
-
 /*
 if_statement
-  : TK_KW_IF '(' expression ')' block_statement else_clause_list
+  : TK_IF '(' expression ')' statement
+  | TK_IF '(' expression ')' statement TK_ELSE statement
   ;
 */
 static Node *if_statement(Parser *parser)
@@ -872,7 +832,7 @@ static Node *if_statement(Parser *parser)
   Node *cond = NULL;
   Node *next = NULL;
 
-  assert_next_token(parser, TK_KW_IF);
+  assert_next_token(parser, TK_IF);
 
   if (!expect(parser, '(')) {
     parse_error(parser, "missing '(' after 'if'");
@@ -889,11 +849,41 @@ static Node *if_statement(Parser *parser)
 
   cond = new_node(NODE_COND, expr, statement(parser));
 
-  if (expect(parser, TK_KW_ELSE)) {
+  if (expect(parser, TK_ELSE)) {
     next = statement(parser);
   }
 
   return new_node(NODE_IF, cond, next);
+}
+
+/*
+while_statement
+  : TK_WHILE '(' expression ')' statement
+  ;
+*/
+static Node *while_statement(Parser *parser)
+{
+  Node *expr = NULL;
+  Node *stmt = NULL;
+
+  assert_next_token(parser, TK_WHILE);
+
+  if (!expect(parser, '(')) {
+    parse_error(parser, "missing '(' after 'if'");
+    skip_until(parser, ')');
+  }
+
+  expr = expression(parser);
+
+  if (!expect(parser, ')')) {
+    parse_error(parser, "missing ')' after conditional expression");
+    skip_until(parser, '{');
+    put_back_token(parser);
+  }
+
+  stmt = statement(parser);
+
+  return new_node(NODE_WHILE, expr, stmt);
 }
 
 /*
@@ -909,15 +899,19 @@ static Node *statement(Parser *parser)
 
   switch (peek_next_token(parser)) {
 
-  case TK_KW_IF:
+  case TK_IF:
     stmt = if_statement(parser);
     break;
 
-  case TK_KW_RETURN:
+  case TK_WHILE:
+    stmt = while_statement(parser);
+    break;
+
+  case TK_RETURN:
     stmt = return_statement(parser);
     break;
 
-  case TK_KW_VARDUMP:
+  case TK_VARDUMP:
     stmt = vardump_statement(parser);
     break;
 
@@ -981,7 +975,7 @@ static Node *function_definition(Parser *parser)
   Node *func_def = NULL;
   Symbol *symbol = NULL;
 
-  assert_next_token(parser, TK_KW_FUNCTION);
+  assert_next_token(parser, TK_FUNCTION);
 
   if (!expect(parser, TK_IDENTIFIER)) {
     parse_error(parser, "missing function name after 'function'");
@@ -1024,7 +1018,7 @@ static Node *program(Parser *parser)
 {
   switch (peek_next_token(parser)) {
 
-  case TK_KW_FUNCTION:
+  case TK_FUNCTION:
     return function_definition(parser);
 
   default:

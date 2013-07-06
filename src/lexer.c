@@ -75,14 +75,15 @@ struct Keyword {
 /* TODO should be decoupled from datatype? */
 /* sorted by alphabet */
 static const struct Keyword keywords[] = {
-  {"else",     TK_KW_ELSE,     TYPE_NONE},
-  {"function", TK_KW_FUNCTION, TYPE_NONE},
-  {"if",       TK_KW_IF,       TYPE_NONE},
-  {"int",      TK_KW_INT,      TYPE_INT},
-  {"return",   TK_KW_RETURN,   TYPE_NONE},
-  {"string",   TK_KW_STRING,   TYPE_STRING},
-  {"var",      TK_KW_VAR,      TYPE_NONE},
-  {"vardump",  TK_KW_VARDUMP,  TYPE_NONE}
+  {"else",     TK_ELSE,     TYPE_NONE},
+  {"function", TK_FUNCTION, TYPE_NONE},
+  {"if",       TK_IF,       TYPE_NONE},
+  {"int",      TK_INT,      TYPE_INT},
+  {"return",   TK_RETURN,   TYPE_NONE},
+  {"string",   TK_STRING,   TYPE_STRING},
+  {"var",      TK_VAR,      TYPE_NONE},
+  {"vardump",  TK_VARDUMP,  TYPE_NONE},
+  {"while",    TK_WHILE,    TYPE_NONE}
 };
 static const size_t N_KEYWORDS = sizeof(keywords)/sizeof(keywords[0]);
 static int compare_keywords(const void *ptr0, const void *ptr1);
@@ -290,7 +291,7 @@ state_string_literal:
   ch = get_next_char(lexer);
   switch (ch) {
   case '"':
-    token->tag = TK_STRING;
+    token->tag = TK_STRING_LITERAL;
     token->value.string = lexer->string_literal->c;
     goto state_final;
   default:

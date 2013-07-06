@@ -1,4 +1,4 @@
-/* escape var if statements program */
+/* escape if statements program */
 /*
    $ src/ecc samples/ex003.if_stmt.es
    $ ./a.out

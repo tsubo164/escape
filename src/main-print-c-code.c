@@ -436,6 +436,20 @@ static void NODE_COND_post_code(const struct AstNode *node, int depth)
 	printf("}\n");
 }
 
+/* NODE_WHILE */
+static void NODE_WHILE_pre_code(const struct AstNode *node, int depth)
+{
+  indent(depth);
+	printf("while (");
+}
+static void NODE_WHILE_in_code(const struct AstNode *node, int depth)
+{
+	printf(") \n");
+}
+static void NODE_WHILE_post_code(const struct AstNode *node, int depth)
+{
+}
+
 /* NODE_RETURN_STMT */
 static void NODE_RETURN_STMT_pre_code(const struct AstNode *node, int depth)
 {
@@ -556,6 +570,7 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_IF),
 	CCODE(NODE_COND),
+	CCODE(NODE_WHILE),
 	CCODE(NODE_BLOCK),
 	CCODE(NODE_RETURN_STMT),
 	CCODE(NODE_SYMBOL),
