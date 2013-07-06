@@ -26,6 +26,7 @@ enum TokenTag {
   TK_OR,
   /* keywords */
   TK_BEGIN_KEYWORDS,
+  TK_DO,
   TK_ELSE,
   TK_FUNCTION,
   TK_IF,

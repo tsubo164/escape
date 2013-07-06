@@ -23,7 +23,7 @@ int main()
 		TEST_INT(token.tag, TK_COMMENT);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_KW_FUNCTION);
+		TEST_INT(token.tag, TK_FUNCTION);
 
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, TK_IDENTIFIER);
@@ -33,7 +33,7 @@ int main()
 		TEST_INT(token.tag, ':');
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_KW_INT);
+		TEST_INT(token.tag, TK_INT);
 
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, '(');
@@ -45,7 +45,7 @@ int main()
 		TEST_INT(token.tag, '{');
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_KW_RETURN);
+		TEST_INT(token.tag, TK_RETURN);
 
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, TK_NUMBER);
@@ -76,7 +76,7 @@ int main()
 		TEST_INT(token.tag, TK_COMMENT);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_STRING);
+		TEST_INT(token.tag, TK_STRING_LITERAL);
 		TEST_STR(token.value.string, "this is a string");
 
 		Lexer_Free(lexer);

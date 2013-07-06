@@ -869,7 +869,7 @@ static Node *while_statement(Parser *parser)
   assert_next_token(parser, TK_WHILE);
 
   if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'if'");
+    parse_error(parser, "missing '(' after 'while'");
     skip_until(parser, ')');
   }
 
@@ -884,6 +884,47 @@ static Node *while_statement(Parser *parser)
   stmt = statement(parser);
 
   return new_node(NODE_WHILE, expr, stmt);
+}
+
+/*
+do_while_statement
+  : TK_DO statement '(' expression ')' TK_WHILE
+  ;
+*/
+static Node *do_while_statement(Parser *parser)
+{
+  Node *expr = NULL;
+  Node *stmt = NULL;
+
+  assert_next_token(parser, TK_DO);
+
+  stmt = statement(parser);
+
+  if (!expect(parser, TK_WHILE)) {
+    parse_error(parser, "missing 'while' after statements");
+    skip_until(parser, ';');
+    put_back_token(parser);
+  }
+
+  if (!expect(parser, '(')) {
+    parse_error(parser, "missing '(' after 'do'");
+    skip_until(parser, ')');
+  }
+
+  expr = expression(parser);
+
+  if (!expect(parser, ')')) {
+    parse_error(parser, "missing ')' after conditional expression");
+    skip_until(parser, ';');
+    put_back_token(parser);
+  }
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' at the end of 'do while' statement");
+    skip_until(parser, ';');
+  }
+
+  return new_node(NODE_DO_WHILE, stmt, expr);
 }
 
 /*
@@ -905,6 +946,10 @@ static Node *statement(Parser *parser)
 
   case TK_WHILE:
     stmt = while_statement(parser);
+    break;
+
+  case TK_DO:
+    stmt = do_while_statement(parser);
     break;
 
   case TK_RETURN:

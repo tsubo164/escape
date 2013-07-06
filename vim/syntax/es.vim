@@ -20,7 +20,7 @@ syn match esNumber display "\<\d[0-9_]*\(u\=l\=\|l\=u\=\)\>"
 
 " Keywords
 syn keyword esBuiltinType          int string
-syn keyword esStatement            return
+syn keyword esStatement            return vardump if else for while do
 syn keyword esStorageClass         var const
 syn keyword esStructure            function struct
 
