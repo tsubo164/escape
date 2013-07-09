@@ -20,9 +20,6 @@ int main()
 		Lexer_SetInputString(lexer, input_string);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_COMMENT);
-
-		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, TK_FUNCTION);
 
 		Lexer_NextToken(lexer, &token);
@@ -71,9 +68,6 @@ int main()
 
 		lexer = Lexer_New();
 		Lexer_SetInputString(lexer, input_string);
-
-		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_COMMENT);
 
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, TK_STRING_LITERAL);

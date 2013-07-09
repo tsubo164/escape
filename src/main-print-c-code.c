@@ -408,47 +408,28 @@ static void NODE_MOD_post_code(const struct AstNode *node, Context *cxt)
 /* NODE_ASSIGN */
 static void NODE_ASSIGN_pre_code(const struct AstNode *node, Context *cxt)
 {
-  indent(cxt);
-	printf("%s = ", node->value.symbol->name);
+	printf("(");
 }
 static void NODE_ASSIGN_in_code(const struct AstNode *node, Context *cxt)
 {
+	printf(" = ");
 }
 static void NODE_ASSIGN_post_code(const struct AstNode *node, Context *cxt)
 {
-	printf(";\n");
+	printf(")");
 }
 
-/* NODE_EXPR */
-static void NODE_EXPR_pre_code(const struct AstNode *node, Context *cxt)
-{
-  printf("%g", node->value.number);
-}
-static void NODE_EXPR_in_code(const struct AstNode *node, Context *cxt)
+/* NODE_CALL_EXPR */
+static void NODE_CALL_EXPR_pre_code(const struct AstNode *node, Context *cxt)
 {
 }
-static void NODE_EXPR_post_code(const struct AstNode *node, Context *cxt)
+static void NODE_CALL_EXPR_in_code(const struct AstNode *node, Context *cxt)
 {
+  printf("(");
 }
-
-/* NODE_FUNC_CALL */
-static void NODE_FUNC_CALL_pre_code(const struct AstNode *node, Context *cxt)
+static void NODE_CALL_EXPR_post_code(const struct AstNode *node, Context *cxt)
 {
-	const char *function_name = node->value.symbol->name;
-
-  indent(cxt);
-	if (strcmp(function_name, "print") == 0) {
-		printf("printf(");
-	} else {
-		printf("%s(", function_name);
-	}
-}
-static void NODE_FUNC_CALL_in_code(const struct AstNode *node, Context *cxt)
-{
-}
-static void NODE_FUNC_CALL_post_code(const struct AstNode *node, Context *cxt)
-{
-	printf(");\n");
+	printf(")");
 }
 
 /* NODE_FUNC_DEF */
@@ -464,6 +445,19 @@ static void NODE_FUNC_DEF_in_code(const struct AstNode *node, Context *cxt)
 }
 static void NODE_FUNC_DEF_post_code(const struct AstNode *node, Context *cxt)
 {
+}
+
+/* NODE_EXPR_STMT */
+static void NODE_EXPR_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+}
+static void NODE_EXPR_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_EXPR_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(";\n");
 }
 
 /* NODE_BLOCK */
@@ -579,7 +573,11 @@ static void NODE_RETURN_STMT_post_code(const struct AstNode *node, Context *cxt)
 /* NODE_SYMBOL */
 static void NODE_SYMBOL_pre_code(const struct AstNode *node, Context *cxt)
 {
-  printf("%s", node->value.symbol->name);
+	if (strcmp(node->value.symbol->name, "print") == 0) {
+		printf("printf");
+	} else {
+		printf("%s", node->value.symbol->name);
+	}
 }
 static void NODE_SYMBOL_in_code(const struct AstNode *node, Context *cxt)
 {
@@ -682,13 +680,13 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_DIV),
 	CCODE(NODE_MOD),
 	CCODE(NODE_ASSIGN),
-	CCODE(NODE_EXPR),
-	CCODE(NODE_FUNC_CALL),
+	CCODE(NODE_CALL_EXPR),
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_IF),
 	CCODE(NODE_COND),
 	CCODE(NODE_WHILE),
 	CCODE(NODE_DO_WHILE),
+	CCODE(NODE_EXPR_STMT),
 	CCODE(NODE_BLOCK),
 	CCODE(NODE_RETURN_STMT),
 	CCODE(NODE_SYMBOL),

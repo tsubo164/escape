@@ -11,7 +11,9 @@ See LICENSE and README
 enum TokenTag {
   /* tokens */
   TK_BEGIN_TOKENS = 256,
+  /*
   TK_COMMENT,
+  */
   TK_IDENTIFIER,
   TK_NUMBER,
   TK_STRING_LITERAL,

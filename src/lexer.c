@@ -331,8 +331,11 @@ state_block_comment:
     ch = get_next_char(lexer);
     switch (ch) {
     case '/':
+      /*
       token->tag = TK_COMMENT;
       goto state_final;
+      */
+      goto state_initial;
     default:
       goto state_block_comment;
     }
@@ -349,9 +352,13 @@ state_line_comment:
   ch = get_next_char(lexer);
   switch (ch) {
   case '\n':
+    /*
     token->tag = TK_COMMENT;
     detect_new_line(lexer);
     goto state_final;
+    */
+    detect_new_line(lexer);
+    goto state_initial;
 
   default:
     goto state_line_comment;

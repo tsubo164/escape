@@ -115,13 +115,10 @@ static void print_node_recursive(const struct AstNode *node, int depth)
   case NODE_BLOCK:
     printf("block");
     break;
-  case NODE_EXPR:
-    printf("expression");
-    break;
   case NODE_FUNC_DEF:
     printf("function definition: [%s]", node->value.symbol->name);
     break;
-  case NODE_FUNC_CALL:
+  case NODE_CALL_EXPR:
     printf("function call: [%s]", node->value.symbol->name);
     break;
   case NODE_LIST:
