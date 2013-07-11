@@ -186,6 +186,7 @@ static int get_next_token(Parser *parser)
     }
     parser->is_head_token = 1;
 
+#if 0
     switch (token_tag(parser)) {
     /*
     case TK_COMMENT:
@@ -194,6 +195,7 @@ static int get_next_token(Parser *parser)
     default:
       break;
     }
+#endif
 
     break;
   }
@@ -631,11 +633,7 @@ expression
 */
 static Node *expression(Parser *parser)
 {
-  /*
-  Node *node = logical_or_expression(parser);
-  */
   Node *node = assignment_expression(parser);
-
   return node;
 }
 
@@ -734,92 +732,6 @@ static Node *vardump_statement(Parser *parser)
 
   return stmt;
 }
-
-#if 0
-/*
-function_call
-  : TK_IDENTIFIER "(" arguments_list ")"
-  ;
-*/
-static Node *function_call(Parser *parser)
-{
-  Node *node = NULL;
-  Node *args = NULL;
-
-  assert_next_token(parser, '(');
-
-  args = argument_list(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' at the end of function call");
-    skip_until(parser, ';');
-  }
-
-  node = AstNode_New(NODE_CALL_EXPR);
-  node->left = args;
-
-  return node;
-}
-
-/*
-assignment_or_function_call
-  : assignment
-  | function_call
-  ;
-*/
-static Node *assignment_or_function_call(Parser *parser)
-{
-  Node *node = NULL;
-  Symbol *symbol = NULL;
-
-  assert_next_token(parser, TK_IDENTIFIER);
-
-  symbol = SymbolTable_Lookup(
-      symbol_table(parser),
-      token_name(parser));
-
-  /* TODO TMP */
-  {
-    if (strcmp(token_name(parser), "print") == 0) {
-      symbol = SymbolTable_Add(
-          symbol_table(parser),
-          token_name(parser),
-          SYM_FUNCTION);
-    }
-  }
-
-  switch (peek_next_token(parser)) {
-
-  case '(':
-    symbol->type = SYM_FUNCTION;
-    node = function_call(parser);
-    node->value.symbol = symbol;
-    if (!expect(parser, ';')) {
-      parse_error(parser, "missing ';' at the end of function call");
-      skip_until(parser, ';');
-    }
-    break;
-
-  case '=':
-    /* TODO TMP */
-    assert_next_token(parser, '=');
-    node = AstNode_New(NODE_ASSIGN);
-    node->value.symbol = symbol;
-    node->left = expression(parser);
-    if (!expect(parser, ';')) {
-      parse_error(parser, "missing ';' at the end of assignment");
-      skip_until(parser, ';');
-    }
-    break;
-
-  default:
-    parse_error(parser, "unexpected charactors");
-    break;
-  }
-
-  return node;
-}
-#endif
 
 /*
 variable_declaration
@@ -973,6 +885,83 @@ static Node *if_statement(Parser *parser)
 }
 
 /*
+for_statement
+  : TK_FOR '(' expression ';' expression ';' expression ')' statement
+  ;
+*/
+static Node *for_statement(Parser *parser)
+{
+  Node *init = NULL;
+  Node *cond = NULL;
+  Node *expr = NULL;
+  Node *loop = NULL;
+  Node *iter = NULL;
+
+  assert_next_token(parser, TK_FOR);
+
+  if (!expect(parser, '(')) {
+    parse_error(parser, "missing '(' after 'for'");
+    skip_until(parser, ')');
+  }
+
+  if (!expect(parser, ';')) {
+    init = expression(parser);
+    if (!expect(parser, ';')) {
+      parse_error(parser, "missing ';' after the first 'for' expression");
+      skip_until(parser, ')');
+    }
+  }
+  /*
+  init = expression(parser);
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' after the first 'for' expression");
+    skip_until(parser, ')');
+  }
+  */
+
+  if (!expect(parser, ';')) {
+    expr = expression(parser);
+    if (!expect(parser, ';')) {
+      parse_error(parser, "missing ';' after the second 'for' expression");
+      skip_until(parser, ')');
+    }
+  }
+  /*
+  expr = expression(parser);
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' after the second 'for' expression");
+    skip_until(parser, ')');
+  }
+  */
+
+  if (!expect(parser, ')')) {
+    iter = expression(parser);
+    if (!expect(parser, ')')) {
+      parse_error(parser, "missing ')' after the third 'for' expression");
+      skip_until(parser, '{');
+      put_back_token(parser);
+    }
+  }
+
+  /*
+  iter = expression(parser);
+
+  if (!expect(parser, ')')) {
+    parse_error(parser, "missing ')' after the third 'for' expression");
+    skip_until(parser, '{');
+    put_back_token(parser);
+  }
+  */
+
+  loop = new_node(NODE_FOR_LOOP, iter, statement(parser));
+  cond = new_node(NODE_FOR_COND, expr, loop);
+
+  return new_node(NODE_FOR_INIT, init, cond);
+}
+
+/*
 while_statement
   : TK_WHILE '(' expression ')' statement
   ;
@@ -1058,6 +1047,10 @@ static Node *statement(Parser *parser)
 
   case TK_IF:
     stmt = if_statement(parser);
+    break;
+
+  case TK_FOR:
+    stmt = for_statement(parser);
     break;
 
   case TK_WHILE:

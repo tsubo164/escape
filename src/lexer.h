@@ -32,6 +32,7 @@ enum TokenTag {
   TK_BEGIN_KEYWORDS,
   TK_DO,
   TK_ELSE,
+  TK_FOR,
   TK_FUNCTION,
   TK_IF,
   TK_INT,

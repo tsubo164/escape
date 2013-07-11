@@ -514,6 +514,50 @@ static void NODE_COND_post_code(const struct AstNode *node, Context *cxt)
   }
 }
 
+/* NODE_FOR_INIT */
+static void NODE_FOR_INIT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("for (");
+}
+static void NODE_FOR_INIT_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf("; ");
+}
+static void NODE_FOR_INIT_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
+/* NODE_FOR_COND */
+static void NODE_FOR_COND_pre_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_FOR_COND_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf("; ");
+}
+static void NODE_FOR_COND_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
+/* NODE_FOR_LOOP */
+static void NODE_FOR_LOOP_pre_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_FOR_LOOP_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf(")\n");
+  if (node->right != NULL && node->right->op != NODE_BLOCK) {
+    NODE_BLOCK_pre_code(node, cxt);
+  }
+}
+static void NODE_FOR_LOOP_post_code(const struct AstNode *node, Context *cxt)
+{
+  if (node->right != NULL && node->right->op != NODE_BLOCK) {
+    NODE_BLOCK_post_code(node, cxt);
+  }
+}
+
 /* NODE_WHILE */
 static void NODE_WHILE_pre_code(const struct AstNode *node, Context *cxt)
 {
@@ -684,6 +728,9 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_FUNC_DEF),
 	CCODE(NODE_IF),
 	CCODE(NODE_COND),
+	CCODE(NODE_FOR_INIT),
+	CCODE(NODE_FOR_COND),
+	CCODE(NODE_FOR_LOOP),
 	CCODE(NODE_WHILE),
 	CCODE(NODE_DO_WHILE),
 	CCODE(NODE_EXPR_STMT),

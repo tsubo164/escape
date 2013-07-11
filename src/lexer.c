@@ -77,6 +77,7 @@ struct Keyword {
 static const struct Keyword keywords[] = {
   {"do",       TK_DO,       TYPE_NONE},
   {"else",     TK_ELSE,     TYPE_NONE},
+  {"for",      TK_FOR,      TYPE_NONE},
   {"function", TK_FUNCTION, TYPE_NONE},
   {"if",       TK_IF,       TYPE_NONE},
   {"int",      TK_INT,      TYPE_INT},
