@@ -477,6 +477,34 @@ static void NODE_BLOCK_post_code(const struct AstNode *node, Context *cxt)
 	printf("}\n");
 }
 
+/* NODE_BREAK_STMT */
+static void NODE_BREAK_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("break");
+}
+static void NODE_BREAK_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_BREAK_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(";\n");
+}
+
+/* NODE_CONTINUE_STMT */
+static void NODE_CONTINUE_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("continue");
+}
+static void NODE_CONTINUE_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_CONTINUE_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+	printf(";\n");
+}
+
 /* NODE_IF */
 static void NODE_IF_pre_code(const struct AstNode *node, Context *cxt)
 {
@@ -726,6 +754,8 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_ASSIGN),
 	CCODE(NODE_CALL_EXPR),
 	CCODE(NODE_FUNC_DEF),
+	CCODE(NODE_BREAK_STMT),
+	CCODE(NODE_CONTINUE_STMT),
 	CCODE(NODE_IF),
 	CCODE(NODE_COND),
 	CCODE(NODE_FOR_INIT),

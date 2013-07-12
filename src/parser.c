@@ -849,6 +849,48 @@ static Node *block_statement(Parser *parser)
 }
 
 /*
+break_statement
+  : TK_BREAK ';'
+  ;
+*/
+static Node *break_statement(Parser *parser)
+{
+  Node *stmt = NULL;
+
+  assert_next_token(parser, TK_BREAK);
+
+  stmt = new_node(NODE_BREAK_STMT, NULL, NULL);
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' at the end of break statement");
+    skip_until(parser, ';');
+  }
+
+  return stmt;
+}
+
+/*
+continue_statement
+  : TK_CONTINUE ';'
+  ;
+*/
+static Node *continue_statement(Parser *parser)
+{
+  Node *stmt = NULL;
+
+  assert_next_token(parser, TK_CONTINUE);
+
+  stmt = new_node(NODE_CONTINUE_STMT, NULL, NULL);
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' at the end of continue statement");
+    skip_until(parser, ';');
+  }
+
+  return stmt;
+}
+
+/*
 if_statement
   : TK_IF '(' expression ')' statement
   | TK_IF '(' expression ')' statement TK_ELSE statement
@@ -1044,6 +1086,14 @@ static Node *statement(Parser *parser)
   Node *stmt = NULL;
 
   switch (peek_next_token(parser)) {
+
+  case TK_BREAK:
+    stmt = break_statement(parser);
+    break;
+
+  case TK_CONTINUE:
+    stmt = continue_statement(parser);
+    break;
 
   case TK_IF:
     stmt = if_statement(parser);

@@ -26,5 +26,22 @@ function main: int ()
     vardump i;
   }
 
+  print("------------------------\n");
+
+  i = 0;
+  for (;;) {
+    if (i%2 == 1) {
+      i++;
+      continue;
+    }
+
+    vardump i;
+
+    if (i == 10)
+      break;
+
+    i++;
+  }
+
   return 0;
 }

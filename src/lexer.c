@@ -75,6 +75,8 @@ struct Keyword {
 /* TODO should be decoupled from datatype? */
 /* sorted by alphabet */
 static const struct Keyword keywords[] = {
+  {"break",    TK_BREAK,    TYPE_NONE},
+  {"continue", TK_CONTINUE, TYPE_NONE},
   {"do",       TK_DO,       TYPE_NONE},
   {"else",     TK_ELSE,     TYPE_NONE},
   {"for",      TK_FOR,      TYPE_NONE},
