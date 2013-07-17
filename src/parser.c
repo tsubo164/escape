@@ -263,6 +263,29 @@ static Symbol *new_symbol(Parser *parser, int symbol_type)
   return symbol;
 }
 
+/* TODO TEST */
+typedef struct NodeList {
+  Node *head;
+  Node *tail;
+} NodeList;
+#define LIST_INIT {NULL, NULL}
+
+static Node *append(NodeList *list, Node *node)
+{
+  if (node == NULL) {
+    return NULL;
+  }
+
+  if (list->tail == NULL) {
+    list->tail = list_node(node, NULL);
+    list->head = list->tail;
+  } else {
+    list->tail->right = list_node(node, NULL);
+    list->tail = list->tail->right;
+  }
+  return node;
+}
+
 static DataType type_specifier(Parser *parser)
 {
   DataType data_type = TYPE_NONE;
@@ -927,6 +950,113 @@ static Node *if_statement(Parser *parser)
 }
 
 /*
+case_clause
+  : TK_CASE expression ':' statement
+  | TK_DEFAULT ':' statement
+  ;
+*/
+static Node *case_clause(Parser *parser)
+{
+  NodeList list = LIST_INIT;
+  Node *expr = NULL;
+
+  if (!expect(parser, TK_CASE) && !expect(parser, TK_DEFAULT)) {
+    /* TODO ABORT? */
+    return NULL;
+  }
+
+  if (token_tag(parser) == TK_CASE) {
+    expr = expression(parser);
+  }
+
+  if (!expect(parser, ':')) {
+    parse_error(parser, "missing ':' at the end of case tag");
+    skip_until(parser, ';');
+  }
+
+  for (;;) {
+    Node *stmt = NULL;
+    const int next = peek_next_token(parser);
+
+    if (next == TK_CASE || next == TK_DEFAULT) {
+      break;
+    }
+
+    stmt = statement(parser);
+    if (stmt == NULL) {
+      break;
+    }
+
+    append(&list, stmt);
+  }
+
+  return new_node(NODE_CASE_STMT, expr, list.head);
+
+}
+
+/*
+case_clause_list
+  : case_clause case_clause_list
+  ;
+*/
+static Node *case_clause_list(Parser *parser)
+{
+  NodeList list = LIST_INIT;
+
+  for (;;) {
+    const int next = peek_next_token(parser);
+
+    if (next != TK_CASE && next != TK_DEFAULT) {
+      break;
+    }
+
+    append(&list, case_clause(parser));
+  }
+
+  return list.head;
+}
+
+/*
+switch_statement
+  : TK_SWITCH '(' expression ')' '{' case_clause_list '}'
+  ;
+*/
+static Node *switch_statement(Parser *parser)
+{
+  Node *expr = NULL;
+  Node *case_list = NULL;
+
+  assert_next_token(parser, TK_SWITCH);
+
+  if (!expect(parser, '(')) {
+    parse_error(parser, "missing '(' after 'if'");
+    skip_until(parser, ')');
+  }
+
+  expr = expression(parser);
+
+  if (!expect(parser, ')')) {
+    parse_error(parser, "missing ')' after conditional expression");
+    skip_until(parser, '{');
+    put_back_token(parser);
+  }
+
+  if (!expect(parser, '{')) {
+    parse_error(parser, "missing '{' after 'switch' condition");
+    skip_until(parser, ';');
+  }
+
+  case_list = case_clause_list(parser);
+
+  if (!expect(parser, '}')) {
+    parse_error(parser, "missing '}' after 'switch' case clauses");
+    skip_until(parser, ';');
+  }
+
+  return new_node(NODE_SWITCH, expr, case_list);
+}
+
+/*
 for_statement
   : TK_FOR '(' expression ';' expression ';' expression ')' statement
   ;
@@ -953,14 +1083,6 @@ static Node *for_statement(Parser *parser)
       skip_until(parser, ')');
     }
   }
-  /*
-  init = expression(parser);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' after the first 'for' expression");
-    skip_until(parser, ')');
-  }
-  */
 
   if (!expect(parser, ';')) {
     expr = expression(parser);
@@ -969,14 +1091,6 @@ static Node *for_statement(Parser *parser)
       skip_until(parser, ')');
     }
   }
-  /*
-  expr = expression(parser);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' after the second 'for' expression");
-    skip_until(parser, ')');
-  }
-  */
 
   if (!expect(parser, ')')) {
     iter = expression(parser);
@@ -986,16 +1100,6 @@ static Node *for_statement(Parser *parser)
       put_back_token(parser);
     }
   }
-
-  /*
-  iter = expression(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after the third 'for' expression");
-    skip_until(parser, '{');
-    put_back_token(parser);
-  }
-  */
 
   loop = new_node(NODE_FOR_LOOP, iter, statement(parser));
   cond = new_node(NODE_FOR_COND, expr, loop);
@@ -1087,37 +1191,47 @@ static Node *statement(Parser *parser)
 
   switch (peek_next_token(parser)) {
 
-  case TK_BREAK:
-    stmt = break_statement(parser);
-    break;
-
-  case TK_CONTINUE:
-    stmt = continue_statement(parser);
-    break;
-
+  /* selection statements */
   case TK_IF:
     stmt = if_statement(parser);
     break;
+  case TK_SWITCH:
+    stmt = switch_statement(parser);
+    break;
 
+  /* iteration statements */
   case TK_FOR:
     stmt = for_statement(parser);
     break;
-
   case TK_WHILE:
     stmt = while_statement(parser);
     break;
-
   case TK_DO:
     stmt = do_while_statement(parser);
     break;
 
+  /* jump statements */
+  case TK_BREAK:
+    stmt = break_statement(parser);
+    break;
+  case TK_CONTINUE:
+    stmt = continue_statement(parser);
+    break;
   case TK_RETURN:
     stmt = return_statement(parser);
     break;
 
+  /* builtin operators */
   case TK_VARDUMP:
     stmt = vardump_statement(parser);
     break;
+
+#if 0
+  /* labeled statements */
+  case TK_LABEL:
+    stmt = labeled_statement(parser);
+    break;
+#endif
 
   /*
   case TK_IDENTIFIER:

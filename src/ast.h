@@ -37,6 +37,8 @@ enum AstNodeType {
   /* control structures */
   NODE_IF,
   NODE_COND,
+  NODE_SWITCH,
+  NODE_CASE_STMT,
   NODE_WHILE,
   NODE_DO_WHILE,
   NODE_FOR_INIT,

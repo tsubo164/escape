@@ -31,7 +31,9 @@ enum TokenTag {
   /* keywords */
   TK_BEGIN_KEYWORDS,
   TK_BREAK,
+  TK_CASE,
   TK_CONTINUE,
+  TK_DEFAULT,
   TK_DO,
   TK_ELSE,
   TK_FOR,
@@ -40,6 +42,7 @@ enum TokenTag {
   TK_INT,
   TK_RETURN,
   TK_STRING,
+  TK_SWITCH,
   TK_VAR,
   TK_VARDUMP,
   TK_WHILE,

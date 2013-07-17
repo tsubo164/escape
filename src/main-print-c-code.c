@@ -523,6 +523,48 @@ static void NODE_IF_post_code(const struct AstNode *node, Context *cxt)
 {
 }
 
+/* NODE_SWITCH */
+static void NODE_SWITCH_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("switch (");
+}
+static void NODE_SWITCH_in_code(const struct AstNode *node, Context *cxt)
+{
+  printf(")\n");
+  if (node->right != NULL && node->right->op != NODE_BLOCK) {
+    NODE_BLOCK_pre_code(node, cxt);
+  }
+}
+static void NODE_SWITCH_post_code(const struct AstNode *node, Context *cxt)
+{
+  if (node->right != NULL && node->right->op != NODE_BLOCK) {
+    NODE_BLOCK_post_code(node, cxt);
+  }
+}
+
+/* NODE_CASE_STMT */
+static void NODE_CASE_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  cxt->depth--;
+  indent(cxt);
+  if (node->left != NULL) {
+    printf("case ");
+  } else {
+    printf("default");
+  }
+  cxt->depth++;
+}
+static void NODE_CASE_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf(":\n");
+}
+static void NODE_CASE_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("break;\n");
+}
+
 /* NODE_COND */
 static void NODE_COND_pre_code(const struct AstNode *node, Context *cxt)
 {
@@ -757,6 +799,8 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_BREAK_STMT),
 	CCODE(NODE_CONTINUE_STMT),
 	CCODE(NODE_IF),
+	CCODE(NODE_SWITCH),
+	CCODE(NODE_CASE_STMT),
 	CCODE(NODE_COND),
 	CCODE(NODE_FOR_INIT),
 	CCODE(NODE_FOR_COND),

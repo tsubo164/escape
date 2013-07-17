@@ -76,7 +76,9 @@ struct Keyword {
 /* sorted by alphabet */
 static const struct Keyword keywords[] = {
   {"break",    TK_BREAK,    TYPE_NONE},
+  {"case",     TK_CASE,     TYPE_NONE},
   {"continue", TK_CONTINUE, TYPE_NONE},
+  {"default",  TK_DEFAULT,  TYPE_NONE},
   {"do",       TK_DO,       TYPE_NONE},
   {"else",     TK_ELSE,     TYPE_NONE},
   {"for",      TK_FOR,      TYPE_NONE},
@@ -85,6 +87,7 @@ static const struct Keyword keywords[] = {
   {"int",      TK_INT,      TYPE_INT},
   {"return",   TK_RETURN,   TYPE_NONE},
   {"string",   TK_STRING,   TYPE_STRING},
+  {"switch",   TK_SWITCH,   TYPE_NONE},
   {"var",      TK_VAR,      TYPE_NONE},
   {"vardump",  TK_VARDUMP,  TYPE_NONE},
   {"while",    TK_WHILE,    TYPE_NONE}
