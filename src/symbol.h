@@ -12,6 +12,7 @@ enum SymbolType {
 	SYM_NONE = 0,
 	SYM_CONST,
 	SYM_FUNCTION,
+	SYM_LABEL,
 	SYM_STRING_LITERAL,
 	SYM_VAR
 };

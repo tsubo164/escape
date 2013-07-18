@@ -83,8 +83,10 @@ static const struct Keyword keywords[] = {
   {"else",     TK_ELSE,     TYPE_NONE},
   {"for",      TK_FOR,      TYPE_NONE},
   {"function", TK_FUNCTION, TYPE_NONE},
+  {"goto",     TK_GOTO,     TYPE_NONE},
   {"if",       TK_IF,       TYPE_NONE},
   {"int",      TK_INT,      TYPE_INT},
+  {"label",    TK_LABEL,    TYPE_NONE},
   {"return",   TK_RETURN,   TYPE_NONE},
   {"string",   TK_STRING,   TYPE_STRING},
   {"switch",   TK_SWITCH,   TYPE_NONE},
@@ -511,7 +513,7 @@ static void keyword_or_identifier(struct Token *token)
   struct Keyword key;
   key.name = token->value.name;
 
-  found = bsearch(&key, keywords, N_KEYWORDS, sizeof(struct Keyword), compare_keywords);
+  found = bsearch(&key, keywords, N_KEYWORDS, sizeof(keywords[0]), compare_keywords);
 
   if (found) {
     token->tag       = found->token_tag;

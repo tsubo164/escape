@@ -73,11 +73,11 @@ struct Symbol *SymbolTable_Lookup(struct SymbolTable *table, const char *key)
 
 	for (entry = table->table[h]; entry != NULL; entry = entry->next) {
 		if (strcmp(key, entry->symbol.name) == 0) {
-			break;
+      return &entry->symbol;
 		}
 	}
 
-	return &entry->symbol;
+	return NULL;
 }
 
 struct Symbol *SymbolTable_Add(struct SymbolTable *table,

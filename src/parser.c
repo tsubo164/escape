@@ -749,11 +749,85 @@ static Node *vardump_statement(Parser *parser)
   stmt->value.symbol = symbol;
 
   if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of varialbe declaration");
+    parse_error(parser, "missing ';' at the end of vardump statement");
     skip_until(parser, ';');
   }
 
   return stmt;
+}
+
+/*
+goto_statement
+  : TK_GOTO identifier ';'
+  ;
+*/
+static Node *goto_statement(Parser *parser)
+{
+  Symbol *symbol = NULL;
+  Node *symnode = NULL;
+
+  assert_next_token(parser, TK_GOTO);
+
+  if (!expect(parser, TK_IDENTIFIER)) {
+    parse_error(parser, "missing identifier after 'goto'");
+    skip_until(parser, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symbol = SymbolTable_Add(
+      symbol_table(parser),
+      token_name(parser),
+      SYM_LABEL);
+
+  if (symbol == NULL) {
+    parse_error(parser, "undefined variable specified for 'goto'");
+    skip_until(parser, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symnode = AstNode_New(NODE_SYMBOL);
+  symnode->value.symbol = symbol;
+
+  if (!expect(parser, ';')) {
+    parse_error(parser, "missing ';' at the end of goto statement");
+    skip_until(parser, ';');
+  }
+
+  return new_node(NODE_GOTO_STMT, symnode, NULL);
+}
+
+/*
+labeled_statement
+  : TK_LABEL identifier ':' statement
+  ;
+*/
+static Node *labeled_statement(Parser *parser)
+{
+  Symbol *symbol = NULL;
+  Node *symnode = NULL;
+
+  assert_next_token(parser, TK_LABEL);
+
+  if (!expect(parser, TK_IDENTIFIER)) {
+    parse_error(parser, "missing identifier after 'label'");
+    skip_until(parser, ':');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symbol = SymbolTable_Add(
+      symbol_table(parser),
+      token_name(parser),
+      SYM_LABEL);
+
+  symnode = AstNode_New(NODE_SYMBOL);
+  symnode->value.symbol = symbol;
+
+  if (!expect(parser, ':')) {
+    parse_error(parser, "missing ':' at the end of varialbe declaration");
+    skip_until(parser, ';');
+  }
+
+  return new_node(NODE_LABELED_STMT, symnode, statement(parser));
 }
 
 /*
@@ -1220,18 +1294,19 @@ static Node *statement(Parser *parser)
   case TK_RETURN:
     stmt = return_statement(parser);
     break;
+  case TK_GOTO:
+    stmt = goto_statement(parser);
+    break;
 
   /* builtin operators */
   case TK_VARDUMP:
     stmt = vardump_statement(parser);
     break;
 
-#if 0
   /* labeled statements */
   case TK_LABEL:
     stmt = labeled_statement(parser);
     break;
-#endif
 
   /*
   case TK_IDENTIFIER:

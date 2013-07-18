@@ -684,6 +684,35 @@ static void NODE_RETURN_STMT_post_code(const struct AstNode *node, Context *cxt)
 	printf(";\n");
 }
 
+/* NODE_GOTO_STMT */
+static void NODE_GOTO_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  indent(cxt);
+	printf("goto ");
+}
+static void NODE_GOTO_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf(";\n");
+}
+static void NODE_GOTO_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
+/* NODE_LABELED_STMT */
+static void NODE_LABELED_STMT_pre_code(const struct AstNode *node, Context *cxt)
+{
+  cxt->depth--;
+  indent(cxt);
+  cxt->depth++;
+}
+static void NODE_LABELED_STMT_in_code(const struct AstNode *node, Context *cxt)
+{
+	printf(":\n");
+}
+static void NODE_LABELED_STMT_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
 /* NODE_SYMBOL */
 static void NODE_SYMBOL_pre_code(const struct AstNode *node, Context *cxt)
 {
@@ -810,6 +839,8 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_EXPR_STMT),
 	CCODE(NODE_BLOCK),
 	CCODE(NODE_RETURN_STMT),
+	CCODE(NODE_GOTO_STMT),
+	CCODE(NODE_LABELED_STMT),
 	CCODE(NODE_SYMBOL),
 	CCODE(NODE_NUMBER_LITERAL),
 	CCODE(NODE_STRING_LITERAL),
