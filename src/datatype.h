@@ -7,9 +7,10 @@ See LICENSE and README
 #define DATATYPE_H
 
 enum {
-	TYPE_NONE,
-	TYPE_INT,
-	TYPE_STRING
+  TYPE_NONE,
+  TYPE_INT,
+  TYPE_FLOAT,
+  TYPE_STRING
 };
 
 typedef int DataType;

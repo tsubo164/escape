@@ -75,6 +75,41 @@ int main()
 
 		Lexer_Free(lexer);
 	}
+
+	{
+		struct Lexer *lexer = NULL;
+		struct Token token;
+
+		const char input_string[] = ""
+		"  123  3.14  .124 2.34e+5  1.33e-2\n"
+		"\n";
+
+		lexer = Lexer_New();
+		Lexer_SetInputString(lexer, input_string);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, 123);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, 3.14);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, .124);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, 2.34e+5);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, 1.33e-2);
+
+		Lexer_Free(lexer);
+	}
+
 	printf("%s: %d/%d/%d: (FAIL/PASS/TOTAL)\n", __FILE__,
 		Test_GetFailCount(), Test_GetPassCount(), Test_GetTotalCount());
 

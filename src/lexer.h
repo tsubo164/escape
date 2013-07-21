@@ -36,6 +36,7 @@ enum TokenTag {
   TK_DEFAULT,
   TK_DO,
   TK_ELSE,
+  TK_FLOAT,
   TK_FOR,
   TK_FUNCTION,
   TK_GOTO,

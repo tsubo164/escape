@@ -13,6 +13,7 @@ struct DataTypeString {
 const struct DataTypeString datatype_strings[] = {
 	{TYPE_NONE,   "none"},
 	{TYPE_INT,    "int"},
+	{TYPE_FLOAT,  "float"},
 	{TYPE_STRING, "string"}
 };
 static const int N_STRINGS = sizeof(datatype_strings)/sizeof(datatype_strings[0]);

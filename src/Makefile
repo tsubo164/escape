@@ -1,7 +1,7 @@
 CC = gcc
 OPT = -O3
 CFLAGS = -Wall -ansi -pedantic-errors $(OPT)
-LDFLAGS =
+LDFLAGS = -lm
 
 RM = rm -f
 INSTALL = install
@@ -30,7 +30,7 @@ main-print-c-code.o: main-print-c-code.c
 
 print-c-code: main-print-c-code.o $(library);
 	@echo '  link $^'
-	@$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) -o $@ $^ $(LDFLAGS)
 
 #print-tree
 main-print-tree.o: main-print-tree.c
@@ -39,7 +39,7 @@ main-print-tree.o: main-print-tree.c
 
 print-tree: main-print-tree.o $(library);
 	@echo '  link $^'
-	@$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	$(RM) $(library) $(objects)

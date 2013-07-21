@@ -9,11 +9,13 @@ See LICENSE and README
 
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define isidentifier(c) (isalnum((c)) || (c)=='_')
 
 static char scan_name(struct Lexer *lexer, struct Token *token);
 static char scan_number(struct Lexer *lexer, struct Token *token);
+static char scan_digits(struct Lexer *lexer, long *digits, int *n_digits);
 
 struct StringBuffer {
   char *c;
@@ -81,6 +83,7 @@ static const struct Keyword keywords[] = {
   {"default",  TK_DEFAULT,  TYPE_NONE},
   {"do",       TK_DO,       TYPE_NONE},
   {"else",     TK_ELSE,     TYPE_NONE},
+  {"float",    TK_FLOAT,    TYPE_FLOAT},
   {"for",      TK_FOR,      TYPE_NONE},
   {"function", TK_FUNCTION, TYPE_NONE},
   {"goto",     TK_GOTO,     TYPE_NONE},
@@ -297,8 +300,13 @@ state_initial:
       goto state_final;
     }
 
+  case '.':
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
+  /*
+    ch = scan_number(lexer, token);
+  */
+    put_back_char(lexer);
     ch = scan_number(lexer, token);
     goto state_final;
 
@@ -495,6 +503,7 @@ static char scan_name(struct Lexer *lexer, struct Token *token)
   return (*lexer->current_char);
 }
 
+#if 0
 static char scan_number(struct Lexer *lexer, struct Token *token)
 {
   const char *src = lexer->current_char;
@@ -506,6 +515,139 @@ static char scan_number(struct Lexer *lexer, struct Token *token)
 
   return (*lexer->current_char);
 }
+#endif
+
+static char scan_digits(struct Lexer *lexer, long *digits, int *n_digits)
+{
+  *digits = 0;
+  *n_digits = 0;
+
+  for (;;) {
+    char ch = get_next_char(lexer);
+    if (!isdigit(ch)) {
+      put_back_char(lexer);
+      break;
+    }
+    (*digits) = 10 * (*digits) + (ch - '0');
+    (*n_digits)++;
+  }
+  return (*lexer->current_char);
+}
+
+static double power(int x, int y)
+{
+  double p = 1;
+  int i;
+
+  if (y >= 0) {
+    for (i = 0; i < y; i++) {
+      p *= x;
+    }
+  } else {
+    for (i = 0; i < -y; i++) {
+      p *= x;
+    }
+    p = 1./p;
+  }
+
+  return p;
+}
+
+static char scan_number(struct Lexer *lexer, struct Token *token)
+{
+  long integer = 0;
+  long decimal = 0;
+  long exponent = 0;
+  int deci = 0;
+  int is_frac = 0;
+  int is_expo = 0;
+  int e_sign = 1;
+  char ch = '\0';
+
+  ch = scan_digits(lexer, &integer, &deci);
+
+state_initial:
+  ch = get_next_char(lexer);
+
+  switch (ch) {
+  case '.':
+    is_frac = 1;
+    ch = scan_digits(lexer, &decimal, &deci);
+    goto state_initial;
+
+  case 'e': case 'E':
+    ch = get_next_char(lexer);
+    switch (ch) {
+    case '-':
+      e_sign = -1;
+      break;
+    case '+':
+      e_sign = 1;
+      break;
+    default:
+      put_back_char(lexer);
+      e_sign = 1;
+      break;
+    }
+    is_expo = 1;
+    {
+      int dum;
+      ch = scan_digits(lexer, &exponent, &dum);
+    }
+    goto state_initial;
+
+  case 'f': case 'F':
+    is_frac = 1;
+    break;
+
+  default:
+    put_back_char(lexer);
+    break;
+  }
+
+  if (is_frac) {
+    token->value.number = integer + decimal/power(10, deci);
+    token->tag = TK_NUMBER;
+  } else {
+    token->value.number = (double) integer;
+    token->tag = TK_NUMBER;
+  }
+
+  if (is_expo) {
+    token->value.number *= power(10, e_sign * exponent);
+  }
+
+  return (*lexer->current_char);
+}
+
+#if 0
+static char scan_number(struct Lexer *lexer, struct Token *token)
+{
+  char ch = '\0';
+  int digits = 0;
+  int integer = 0;
+
+state_initial:
+  ch = get_next_char(lexer);
+
+  switch (ch) {
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    digits = 10 * digits + (ch - '0');
+    goto state_initial;
+
+  case '.':
+    integer = digits;
+    goto decimal;
+
+  default:
+    put_back_char(lexer);
+    break;
+  }
+
+state_decimal:
+}
+#endif
 
 static void keyword_or_identifier(struct Token *token)
 {
