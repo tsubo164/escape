@@ -15,7 +15,6 @@ See LICENSE and README
 
 static char scan_name(struct Lexer *lexer, struct Token *token);
 static char scan_number(struct Lexer *lexer, struct Token *token);
-static char scan_digits(struct Lexer *lexer, long *digits, int *n_digits);
 
 struct StringBuffer {
   char *c;
@@ -503,24 +502,13 @@ static char scan_name(struct Lexer *lexer, struct Token *token)
   return (*lexer->current_char);
 }
 
-#if 0
-static char scan_number(struct Lexer *lexer, struct Token *token)
+typedef struct Digit {
+  long value;
+  int ndigits;
+} Digit;
+static Digit scan_digits(struct Lexer *lexer)
 {
-  const char *src = lexer->current_char;
-  char *end = NULL;
-
-  token->value.number = strtod(src, &end);
-  token->tag = TK_NUMBER;
-  lexer->current_char = end - 1;
-
-  return (*lexer->current_char);
-}
-#endif
-
-static char scan_digits(struct Lexer *lexer, long *digits, int *n_digits)
-{
-  *digits = 0;
-  *n_digits = 0;
+  Digit digits = {0, 0};
 
   for (;;) {
     char ch = get_next_char(lexer);
@@ -528,10 +516,11 @@ static char scan_digits(struct Lexer *lexer, long *digits, int *n_digits)
       put_back_char(lexer);
       break;
     }
-    (*digits) = 10 * (*digits) + (ch - '0');
-    (*n_digits)++;
+    digits.value = 10 * digits.value + (ch - '0');
+    digits.ndigits++;
   }
-  return (*lexer->current_char);
+
+  return digits;
 }
 
 static double power(int x, int y)
@@ -555,16 +544,15 @@ static double power(int x, int y)
 
 static char scan_number(struct Lexer *lexer, struct Token *token)
 {
-  long integer = 0;
-  long decimal = 0;
-  long exponent = 0;
-  int deci = 0;
+  Digit integer = {0, 0};
+  Digit decimal = {0, 0};
+  Digit exponent = {0, 0};
   int is_frac = 0;
   int is_expo = 0;
   int e_sign = 1;
   char ch = '\0';
 
-  ch = scan_digits(lexer, &integer, &deci);
+  integer = scan_digits(lexer);
 
 state_initial:
   ch = get_next_char(lexer);
@@ -572,7 +560,7 @@ state_initial:
   switch (ch) {
   case '.':
     is_frac = 1;
-    ch = scan_digits(lexer, &decimal, &deci);
+    decimal = scan_digits(lexer);
     goto state_initial;
 
   case 'e': case 'E':
@@ -590,10 +578,7 @@ state_initial:
       break;
     }
     is_expo = 1;
-    {
-      int dum;
-      ch = scan_digits(lexer, &exponent, &dum);
-    }
+    exponent = scan_digits(lexer);
     goto state_initial;
 
   case 'f': case 'F':
@@ -606,48 +591,19 @@ state_initial:
   }
 
   if (is_frac) {
-    token->value.number = integer + decimal/power(10, deci);
+    token->value.number = integer.value + decimal.value/power(10, decimal.ndigits);
     token->tag = TK_NUMBER;
   } else {
-    token->value.number = (double) integer;
+    token->value.number = (double) integer.value;
     token->tag = TK_NUMBER;
   }
 
   if (is_expo) {
-    token->value.number *= power(10, e_sign * exponent);
+    token->value.number *= power(10, e_sign * exponent.value);
   }
 
   return (*lexer->current_char);
 }
-
-#if 0
-static char scan_number(struct Lexer *lexer, struct Token *token)
-{
-  char ch = '\0';
-  int digits = 0;
-  int integer = 0;
-
-state_initial:
-  ch = get_next_char(lexer);
-
-  switch (ch) {
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    digits = 10 * digits + (ch - '0');
-    goto state_initial;
-
-  case '.':
-    integer = digits;
-    goto decimal;
-
-  default:
-    put_back_char(lexer);
-    break;
-  }
-
-state_decimal:
-}
-#endif
 
 static void keyword_or_identifier(struct Token *token)
 {

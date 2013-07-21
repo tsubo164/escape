@@ -16,6 +16,7 @@ enum TokenTag {
   */
   TK_IDENTIFIER,
   TK_NUMBER,
+  TK_INT_LITERAL,
   TK_STRING_LITERAL,
   /* operators */
   TK_INC,
