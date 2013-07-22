@@ -81,7 +81,7 @@ int main()
 		struct Token token;
 
 		const char input_string[] = ""
-		"  123  3.14  .124 2.34e+5  1.33e-2 .0 0. 3e3\n"
+		"  123  3.14  .124 2.34e+5  1.33e-2 .0 0. 3e3f  234230212321L \n"
 		"\n";
 
 		lexer = Lexer_New();
@@ -118,6 +118,10 @@ int main()
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, TK_NUMBER);
 		TEST_DOUBLE(token.value.number, 3e+3);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_NUMBER);
+		TEST_DOUBLE(token.value.number, 234230212321);
 
 		Lexer_Free(lexer);
 	}

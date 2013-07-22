@@ -9,7 +9,6 @@ See LICENSE and README
 
 #include <string.h>
 #include <ctype.h>
-#include <math.h>
 
 #define isidentifier(c) (isalnum((c)) || (c)=='_')
 
@@ -502,6 +501,65 @@ static char scan_name(struct Lexer *lexer, struct Token *token)
   return (*lexer->current_char);
 }
 
+static char scan_number(struct Lexer *lexer, struct Token *token)
+{
+  char buf[265] = {'\0'};
+  char ch = '\0';
+  char *end = NULL;
+  int i = 0;
+  int is_float = 0;
+
+state_initial:
+  ch = get_next_char(lexer);
+
+  switch (ch) {
+  case '+': case '-':
+    if (i > 0) {
+      is_float = 1;
+    }
+    buf[i++] = ch;
+    goto state_initial;
+
+  case '.':
+  case 'e': case 'E':
+  case 'f': case 'F':
+    is_float = 1;
+    buf[i++] = ch;
+    goto state_initial;
+
+  case 'x': case 'X':
+  case 'u': case 'U':
+  case 'l': case 'L':
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    buf[i++] = ch;
+    goto state_initial;
+
+  default:
+    buf[i] = '\0';
+    ch = put_back_char(lexer);
+    break;
+  }
+
+  if (is_float) {
+    token->value.number = strtod(buf, &end);
+    token->tag = TK_NUMBER;
+    /*
+    printf("%c, %c\n", ch, *(--end));
+    */
+  } else {
+    token->value.number = strtol(buf, &end, 0);
+    token->tag = TK_NUMBER;
+  }
+
+  if (*end != '\0') {
+    /* TODO BAD FORMAT */
+  }
+
+  return (*lexer->current_char);
+}
+
+#if 0
 typedef struct Digit {
   long value;
   int ndigits;
@@ -604,6 +662,7 @@ state_initial:
 
   return (*lexer->current_char);
 }
+#endif
 
 static void keyword_or_identifier(struct Token *token)
 {
