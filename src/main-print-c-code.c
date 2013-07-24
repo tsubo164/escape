@@ -729,15 +729,39 @@ static void NODE_SYMBOL_post_code(const struct AstNode *node, Context *cxt)
 {
 }
 
-/* NODE_NUMBER_LITERAL */
-static void NODE_NUMBER_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
+/* NODE_CHAR_LITERAL */
+static void NODE_CHAR_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
 {
-  printf("%g", node->value.number);
+  printf("'%c'", (char) node->value.Integer);
 }
-static void NODE_NUMBER_LITERAL_in_code(const struct AstNode *node, Context *cxt)
+static void NODE_CHAR_LITERAL_in_code(const struct AstNode *node, Context *cxt)
 {
 }
-static void NODE_NUMBER_LITERAL_post_code(const struct AstNode *node, Context *cxt)
+static void NODE_CHAR_LITERAL_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
+/* NODE_INT_LITERAL */
+static void NODE_INT_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
+{
+  printf("%ld", node->value.Integer);
+}
+static void NODE_INT_LITERAL_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_INT_LITERAL_post_code(const struct AstNode *node, Context *cxt)
+{
+}
+
+/* NODE_FLOAT_LITERAL */
+static void NODE_FLOAT_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
+{
+  printf("%g", node->value.Float);
+}
+static void NODE_FLOAT_LITERAL_in_code(const struct AstNode *node, Context *cxt)
+{
+}
+static void NODE_FLOAT_LITERAL_post_code(const struct AstNode *node, Context *cxt)
 {
 }
 
@@ -757,12 +781,22 @@ static void NODE_STRING_LITERAL_post_code(const struct AstNode *node, Context *c
 /* NODE_VAR_DECL */
 static void NODE_VAR_DECL_pre_code(const struct AstNode *node, Context *cxt)
 {
+  const char *ctype_name = NULL;
+
+  switch (node->value.symbol->data_type) {
+  case TYPE_CHAR:  ctype_name = "char";   break;
+  case TYPE_INT:   ctype_name = "int";    break;
+  case TYPE_FLOAT: ctype_name = "float";  break;
+  default:         ctype_name = "error!"; break;
+  }
+
   indent(cxt);
-	printf("int %s", node->value.symbol->name);
+	printf("%s ", ctype_name);
+	printf("%s",  node->value.symbol->name);
   if (node->right == NULL) {
-    printf(" = 0");
+    printf(" = (%s) 0", ctype_name);
   } else {
-    printf(" = ");
+    printf(" = (%s) ", ctype_name);
   }
 }
 static void NODE_VAR_DECL_in_code(const struct AstNode *node, Context *cxt)
@@ -776,18 +810,26 @@ static void NODE_VAR_DECL_post_code(const struct AstNode *node, Context *cxt)
 /* NODE_VARDUMP */
 static void NODE_VARDUMP_pre_code(const struct AstNode *node, Context *cxt)
 {
-  char c = '\0';
+  indent(cxt);
 
   switch (node->value.symbol->data_type) {
-  case TYPE_INT: c = 'd'; break;
+  case TYPE_CHAR:
+    printf("printf(\"#  %s => '%%c' (char)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
+  case TYPE_INT:
+    printf("printf(\"#  %s => %%d (int)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
+  case TYPE_FLOAT:
+    printf("printf(\"#  %s => %%g (float)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
   default: break;
   }
-
-  indent(cxt);
-  printf("printf(\"#  %s => %%%c\\n\", %s)",
-      node->value.symbol->name,
-      c,
-      node->value.symbol->name);
 }
 static void NODE_VARDUMP_in_code(const struct AstNode *node, Context *cxt)
 {
@@ -842,7 +884,9 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_GOTO_STMT),
 	CCODE(NODE_LABELED_STMT),
 	CCODE(NODE_SYMBOL),
-	CCODE(NODE_NUMBER_LITERAL),
+	CCODE(NODE_CHAR_LITERAL),
+	CCODE(NODE_INT_LITERAL),
+	CCODE(NODE_FLOAT_LITERAL),
 	CCODE(NODE_STRING_LITERAL),
 	CCODE(NODE_VAR_DECL),
 	CCODE(NODE_VARDUMP)

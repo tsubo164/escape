@@ -164,9 +164,14 @@ static const char *token_name(const Parser *parser) {
   return token->value.name;
 }
 
-static double token_number(const Parser *parser) {
+static double token_integer_value(const Parser *parser) {
   const Token *token = get_current_token(parser);
-  return token->value.number;
+  return token->value.Integer;
+}
+
+static double token_float_value(const Parser *parser) {
+  const Token *token = get_current_token(parser);
+  return token->value.Float;
 }
 
 static const char *token_string(const Parser *parser) {
@@ -331,7 +336,8 @@ static Node *argument_expression_list(Parser *parser)
 
 /*
 primary_expression
-  : TK_NUMBER
+  : TK_INT_LITERAL
+  | TK_FLOAT_LITERAL
   | TK_IDENTIFIER
   | '(' expression ')'
   ;
@@ -343,9 +349,19 @@ static Node *primary_expression(Parser *parser)
 
   switch (get_next_token(parser)) {
 
-  case TK_NUMBER:
-    node = AstNode_New(NODE_NUMBER_LITERAL);
-    node->value.number = token_number(parser);
+  case TK_CHAR_LITERAL:
+    node = AstNode_New(NODE_CHAR_LITERAL);
+    node->value.Integer = token_integer_value(parser);
+    break;
+
+  case TK_INT_LITERAL:
+    node = AstNode_New(NODE_INT_LITERAL);
+    node->value.Integer = token_integer_value(parser);
+    break;
+
+  case TK_FLOAT_LITERAL:
+    node = AstNode_New(NODE_FLOAT_LITERAL);
+    node->value.Float = token_float_value(parser);
     break;
 
   case TK_IDENTIFIER:

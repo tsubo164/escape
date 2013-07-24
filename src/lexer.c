@@ -77,6 +77,7 @@ struct Keyword {
 static const struct Keyword keywords[] = {
   {"break",    TK_BREAK,    TYPE_NONE},
   {"case",     TK_CASE,     TYPE_NONE},
+  {"char",     TK_CHAR,     TYPE_CHAR},
   {"continue", TK_CONTINUE, TYPE_NONE},
   {"default",  TK_DEFAULT,  TYPE_NONE},
   {"do",       TK_DO,       TYPE_NONE},
@@ -182,6 +183,20 @@ state_initial:
   case '"':
     StringBuffer_Clear(lexer->string_literal);
     goto state_string_literal;
+
+  case '\'':
+    ch = get_next_char(lexer);
+    if (!isalpha(ch)) {
+      token->tag = ch;
+      goto state_final;
+    }
+    token->value.Integer = ch;
+    token->tag = TK_CHAR_LITERAL;
+    ch = get_next_char(lexer);
+    if (ch != '\'') {
+      /* TODO error handling */
+    }
+    goto state_final;
 
   case '/':
     ch = get_next_char(lexer);
@@ -345,14 +360,15 @@ state_block_comment:
     ch = get_next_char(lexer);
     switch (ch) {
     case '/':
-      /*
-      token->tag = TK_COMMENT;
-      goto state_final;
-      */
       goto state_initial;
     default:
       goto state_block_comment;
     }
+
+  case '\0':
+    /* TODO error handling */
+    token->tag = ch;
+    goto state_final;
 
   case '\n':
     detect_new_line(lexer);
@@ -366,11 +382,6 @@ state_line_comment:
   ch = get_next_char(lexer);
   switch (ch) {
   case '\n':
-    /*
-    token->tag = TK_COMMENT;
-    detect_new_line(lexer);
-    goto state_final;
-    */
     detect_new_line(lexer);
     goto state_initial;
 
@@ -509,6 +520,9 @@ static char scan_number(struct Lexer *lexer, struct Token *token)
   int i = 0;
   int is_float = 0;
 
+  /* TODO TEST */
+  int data_type = TYPE_INT;
+
 state_initial:
   ch = get_next_char(lexer);
 
@@ -522,10 +536,17 @@ state_initial:
 
   case '.':
   case 'e': case 'E':
-  case 'f': case 'F':
     is_float = 1;
+    data_type = TYPE_FLOAT; /* TODO set TYPE_DOUBLE */
     buf[i++] = ch;
     goto state_initial;
+
+  case 'f': case 'F':
+    is_float = 1;
+    data_type = TYPE_FLOAT;
+    buf[i++] = ch;
+    buf[i] = '\0';
+    break;
 
   case 'x': case 'X':
   case 'u': case 'U':
@@ -541,16 +562,27 @@ state_initial:
     break;
   }
 
-  if (is_float) {
-    token->value.number = strtod(buf, &end);
-    token->tag = TK_NUMBER;
-    /*
-    printf("%c, %c\n", ch, *(--end));
-    */
-  } else {
-    token->value.number = strtol(buf, &end, 0);
-    token->tag = TK_NUMBER;
+  switch (data_type) {
+  case TYPE_FLOAT:
+    token->value.Float = strtod(buf, &end);
+    token->tag = TK_FLOAT_LITERAL;
+    break;
+
+  default:
+    token->value.Integer = strtol(buf, &end, 0);
+    token->tag = TK_INT_LITERAL;
+    break;
   }
+
+#if 0
+  if (is_float) {
+    token->value.Float = strtod(buf, &end);
+    token->tag = TK_FLOAT_LITERAL;
+  } else {
+    token->value.Integer = strtol(buf, &end, 0);
+    token->tag = TK_INT_LITERAL;
+  }
+#endif
 
   if (*end != '\0') {
     /* TODO BAD FORMAT */

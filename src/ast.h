@@ -56,7 +56,9 @@ enum AstNodeType {
   NODE_RETURN_STMT,
   NODE_NULL_STMT,
   /* literals */
-  NODE_NUMBER_LITERAL,
+  NODE_CHAR_LITERAL,
+  NODE_INT_LITERAL,
+  NODE_FLOAT_LITERAL,
   NODE_STRING_LITERAL,
   NODE_SYMBOL,
   NODE_VAR_DECL,
@@ -67,7 +69,8 @@ enum AstNodeType {
 struct AstNode {
   int op;
   union {
-    double number;
+    long Integer;
+    double Float;
     struct Symbol *symbol;
   } value;
 
@@ -82,7 +85,7 @@ extern int AstNode_Op(const struct AstNode *node);
 extern struct AstNode *AstNode_Left(const struct AstNode *node);
 extern struct AstNode *AstNode_Right(const struct AstNode *node);
 extern struct Symbol *AstNode_Symbol(const struct AstNode *node);
-extern double AstNode_Number(const struct AstNode *node);
+extern long AstNode_IntegerValue(const struct AstNode *node);
 
 extern void AstNode_Print(const struct AstNode *node);
 

@@ -8,6 +8,7 @@ See LICENSE and README
 
 enum {
   TYPE_NONE,
+  TYPE_CHAR,
   TYPE_INT,
   TYPE_FLOAT,
   TYPE_STRING

@@ -64,9 +64,9 @@ struct Symbol *AstNode_Symbol(const struct AstNode *node)
   return node->value.symbol;
 }
 
-double AstNode_Number(const struct AstNode *node)
+long AstNode_IntegerValue(const struct AstNode *node)
 {
-  return node->value.number;
+  return node->value.Integer;
 }
 
 static void free_node_recursive(struct AstNode *node)
@@ -106,8 +106,11 @@ static void print_node_recursive(const struct AstNode *node, int depth)
   case NODE_MUL:
     printf("*");
     break;
-  case NODE_NUMBER_LITERAL:
-    printf("%g", node->value.number);
+  case NODE_INT_LITERAL:
+    printf("%ld", node->value.Integer);
+    break;
+  case NODE_FLOAT_LITERAL:
+    printf("%g", node->value.Float);
     break;
   case NODE_ASSIGN:
     printf("assignment");

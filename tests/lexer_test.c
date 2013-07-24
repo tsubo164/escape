@@ -45,8 +45,8 @@ int main()
 		TEST_INT(token.tag, TK_RETURN);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 0);
+		TEST_INT(token.tag, TK_INT_LITERAL);
+		TEST_DOUBLE(token.value.Integer, 0);
 
 		Lexer_NextToken(lexer, &token);
 		TEST_INT(token.tag, ';');
@@ -88,40 +88,58 @@ int main()
 		Lexer_SetInputString(lexer, input_string);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 123);
+		TEST_INT(token.tag, TK_INT_LITERAL);
+		TEST_DOUBLE(token.value.Integer, 123);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 3.14);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 3.14);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, .124);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, .124);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 2.34e+5);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 2.34e+5);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 1.33e-2);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 1.33e-2);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 0.);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 0.);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 0.);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 0.);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 3e+3);
+		TEST_INT(token.tag, TK_FLOAT_LITERAL);
+		TEST_DOUBLE(token.value.Float, 3e+3);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_NUMBER);
-		TEST_DOUBLE(token.value.number, 234230212321);
+		TEST_INT(token.tag, TK_INT_LITERAL);
+		TEST_DOUBLE(token.value.Integer, 234230212321);
+
+		Lexer_Free(lexer);
+	}
+
+	{
+		struct Lexer *lexer = NULL;
+		struct Token token;
+
+		const char input_string[] = ""
+		"   'c';  \n"
+		"\n";
+
+		lexer = Lexer_New();
+		Lexer_SetInputString(lexer, input_string);
+
+		Lexer_NextToken(lexer, &token);
+		TEST_INT(token.tag, TK_CHAR_LITERAL);
+		TEST_INT(token.value.Integer, 'c');
 
 		Lexer_Free(lexer);
 	}

@@ -15,8 +15,9 @@ enum TokenTag {
   TK_COMMENT,
   */
   TK_IDENTIFIER,
-  TK_NUMBER,
+  TK_CHAR_LITERAL,
   TK_INT_LITERAL,
+  TK_FLOAT_LITERAL,
   TK_STRING_LITERAL,
   /* operators */
   TK_INC,
@@ -33,6 +34,7 @@ enum TokenTag {
   TK_BEGIN_KEYWORDS,
   TK_BREAK,
   TK_CASE,
+  TK_CHAR,
   TK_CONTINUE,
   TK_DEFAULT,
   TK_DO,
@@ -58,7 +60,8 @@ enum { MAX_NAME_SIZE = 64 };
 struct Token {
   int tag;
   union {
-    double number;
+    long Integer;
+    double Float;
     char name[MAX_NAME_SIZE];
     const char *string;
   } value;
