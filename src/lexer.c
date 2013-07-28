@@ -75,13 +75,16 @@ struct Keyword {
 /* TODO should be decoupled from datatype? */
 /* sorted by alphabet */
 static const struct Keyword keywords[] = {
+  {"bool",     TK_BOOL,     TYPE_BOOL},
   {"break",    TK_BREAK,    TYPE_NONE},
   {"case",     TK_CASE,     TYPE_NONE},
   {"char",     TK_CHAR,     TYPE_CHAR},
   {"continue", TK_CONTINUE, TYPE_NONE},
   {"default",  TK_DEFAULT,  TYPE_NONE},
   {"do",       TK_DO,       TYPE_NONE},
+  {"double",   TK_DOUBLE,   TYPE_DOUBLE},
   {"else",     TK_ELSE,     TYPE_NONE},
+  {"false",    TK_FALSE,    TYPE_BOOL},
   {"float",    TK_FLOAT,    TYPE_FLOAT},
   {"for",      TK_FOR,      TYPE_NONE},
   {"function", TK_FUNCTION, TYPE_NONE},
@@ -89,7 +92,9 @@ static const struct Keyword keywords[] = {
   {"if",       TK_IF,       TYPE_NONE},
   {"int",      TK_INT,      TYPE_INT},
   {"label",    TK_LABEL,    TYPE_NONE},
+  {"long",     TK_LONG,     TYPE_LONG},
   {"return",   TK_RETURN,   TYPE_NONE},
+  {"short",    TK_SHORT,    TYPE_SHORT},
   {"string",   TK_STRING,   TYPE_STRING},
   {"switch",   TK_SWITCH,   TYPE_NONE},
   {"var",      TK_VAR,      TYPE_NONE},
@@ -191,7 +196,8 @@ state_initial:
       goto state_final;
     }
     token->value.Integer = ch;
-    token->tag = TK_CHAR_LITERAL;
+    token->tag = TK_INT_LITERAL;
+    token->data_type = TYPE_CHAR;
     ch = get_next_char(lexer);
     if (ch != '\'') {
       /* TODO error handling */
@@ -518,7 +524,6 @@ static char scan_number(struct Lexer *lexer, struct Token *token)
   char ch = '\0';
   char *end = NULL;
   int i = 0;
-  int is_float = 0;
 
   /* TODO TEST */
   int data_type = TYPE_INT;
@@ -529,20 +534,18 @@ state_initial:
   switch (ch) {
   case '+': case '-':
     if (i > 0) {
-      is_float = 1;
+      data_type = TYPE_DOUBLE;
     }
     buf[i++] = ch;
     goto state_initial;
 
   case '.':
   case 'e': case 'E':
-    is_float = 1;
-    data_type = TYPE_FLOAT; /* TODO set TYPE_DOUBLE */
+    data_type = TYPE_DOUBLE;
     buf[i++] = ch;
     goto state_initial;
 
   case 'f': case 'F':
-    is_float = 1;
     data_type = TYPE_FLOAT;
     buf[i++] = ch;
     buf[i] = '\0';
@@ -564,6 +567,7 @@ state_initial:
 
   switch (data_type) {
   case TYPE_FLOAT:
+  case TYPE_DOUBLE:
     token->value.Float = strtod(buf, &end);
     token->tag = TK_FLOAT_LITERAL;
     break;
@@ -573,16 +577,6 @@ state_initial:
     token->tag = TK_INT_LITERAL;
     break;
   }
-
-#if 0
-  if (is_float) {
-    token->value.Float = strtod(buf, &end);
-    token->tag = TK_FLOAT_LITERAL;
-  } else {
-    token->value.Integer = strtol(buf, &end, 0);
-    token->tag = TK_INT_LITERAL;
-  }
-#endif
 
   if (*end != '\0') {
     /* TODO BAD FORMAT */

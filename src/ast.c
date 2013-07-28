@@ -27,6 +27,7 @@ struct AstNode *AstNode_New(int ast_node_op)
 
   node->op = ast_node_op;
   node->value.symbol = NULL;
+  node->data_type = TYPE_NONE;
 
   node->left = NULL;
   node->right = NULL;

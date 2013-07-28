@@ -15,7 +15,9 @@ enum TokenTag {
   TK_COMMENT,
   */
   TK_IDENTIFIER,
+  /*
   TK_CHAR_LITERAL,
+  */
   TK_INT_LITERAL,
   TK_FLOAT_LITERAL,
   TK_STRING_LITERAL,
@@ -32,13 +34,16 @@ enum TokenTag {
   TK_OR,
   /* keywords */
   TK_BEGIN_KEYWORDS,
+  TK_BOOL,
   TK_BREAK,
   TK_CASE,
   TK_CHAR,
   TK_CONTINUE,
   TK_DEFAULT,
   TK_DO,
+  TK_DOUBLE,
   TK_ELSE,
+  TK_FALSE,
   TK_FLOAT,
   TK_FOR,
   TK_FUNCTION,
@@ -46,7 +51,9 @@ enum TokenTag {
   TK_IF,
   TK_INT,
   TK_LABEL,
+  TK_LONG,
   TK_RETURN,
+  TK_SHORT,
   TK_STRING,
   TK_SWITCH,
   TK_VAR,

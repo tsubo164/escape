@@ -729,22 +729,14 @@ static void NODE_SYMBOL_post_code(const struct AstNode *node, Context *cxt)
 {
 }
 
-/* NODE_CHAR_LITERAL */
-static void NODE_CHAR_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
-{
-  printf("'%c'", (char) node->value.Integer);
-}
-static void NODE_CHAR_LITERAL_in_code(const struct AstNode *node, Context *cxt)
-{
-}
-static void NODE_CHAR_LITERAL_post_code(const struct AstNode *node, Context *cxt)
-{
-}
-
 /* NODE_INT_LITERAL */
 static void NODE_INT_LITERAL_pre_code(const struct AstNode *node, Context *cxt)
 {
-  printf("%ld", node->value.Integer);
+  if (node->data_type == TYPE_CHAR) {
+    printf("'%c'", (char) node->value.Integer);
+  } else {
+    printf("%ld", node->value.Integer);
+  }
 }
 static void NODE_INT_LITERAL_in_code(const struct AstNode *node, Context *cxt)
 {
@@ -784,10 +776,28 @@ static void NODE_VAR_DECL_pre_code(const struct AstNode *node, Context *cxt)
   const char *ctype_name = NULL;
 
   switch (node->value.symbol->data_type) {
-  case TYPE_CHAR:  ctype_name = "char";   break;
-  case TYPE_INT:   ctype_name = "int";    break;
-  case TYPE_FLOAT: ctype_name = "float";  break;
-  default:         ctype_name = "error!"; break;
+  case TYPE_BOOL:
+  case TYPE_CHAR:
+    ctype_name = "char";
+    break;
+  case TYPE_SHORT:
+    ctype_name = "short";
+    break;
+  case TYPE_INT:
+    ctype_name = "int";
+    break;
+  case TYPE_LONG:
+    ctype_name = "long";
+    break;
+  case TYPE_FLOAT:
+    ctype_name = "float";
+    break;
+  case TYPE_DOUBLE:
+    ctype_name = "double";
+    break;
+  default:
+    ctype_name = "error!";
+    break;
   }
 
   indent(cxt);
@@ -813,8 +823,18 @@ static void NODE_VARDUMP_pre_code(const struct AstNode *node, Context *cxt)
   indent(cxt);
 
   switch (node->value.symbol->data_type) {
+  case TYPE_BOOL:
+    printf("printf(\"#  %s => %%d (bool)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
   case TYPE_CHAR:
     printf("printf(\"#  %s => '%%c' (char)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
+  case TYPE_SHORT:
+    printf("printf(\"#  %s => %%d (short)\\n\", %s)",
         node->value.symbol->name,
         node->value.symbol->name);
     break;
@@ -823,12 +843,23 @@ static void NODE_VARDUMP_pre_code(const struct AstNode *node, Context *cxt)
         node->value.symbol->name,
         node->value.symbol->name);
     break;
+  case TYPE_LONG:
+    printf("printf(\"#  %s => %%ld (long)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
   case TYPE_FLOAT:
     printf("printf(\"#  %s => %%g (float)\\n\", %s)",
         node->value.symbol->name,
         node->value.symbol->name);
     break;
-  default: break;
+  case TYPE_DOUBLE:
+    printf("printf(\"#  %s => %%g (double)\\n\", %s)",
+        node->value.symbol->name,
+        node->value.symbol->name);
+    break;
+  default:
+    break;
   }
 }
 static void NODE_VARDUMP_in_code(const struct AstNode *node, Context *cxt)
@@ -884,7 +915,6 @@ static const struct CCode ccodes[] = {
 	CCODE(NODE_GOTO_STMT),
 	CCODE(NODE_LABELED_STMT),
 	CCODE(NODE_SYMBOL),
-	CCODE(NODE_CHAR_LITERAL),
 	CCODE(NODE_INT_LITERAL),
 	CCODE(NODE_FLOAT_LITERAL),
 	CCODE(NODE_STRING_LITERAL),

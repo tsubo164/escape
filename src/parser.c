@@ -349,19 +349,16 @@ static Node *primary_expression(Parser *parser)
 
   switch (get_next_token(parser)) {
 
-  case TK_CHAR_LITERAL:
-    node = AstNode_New(NODE_CHAR_LITERAL);
-    node->value.Integer = token_integer_value(parser);
-    break;
-
   case TK_INT_LITERAL:
     node = AstNode_New(NODE_INT_LITERAL);
     node->value.Integer = token_integer_value(parser);
+    node->data_type = token_data_type(parser);
     break;
 
   case TK_FLOAT_LITERAL:
     node = AstNode_New(NODE_FLOAT_LITERAL);
     node->value.Float = token_float_value(parser);
+    node->data_type = token_data_type(parser);
     break;
 
   case TK_IDENTIFIER:

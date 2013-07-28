@@ -56,7 +56,6 @@ enum AstNodeType {
   NODE_RETURN_STMT,
   NODE_NULL_STMT,
   /* literals */
-  NODE_CHAR_LITERAL,
   NODE_INT_LITERAL,
   NODE_FLOAT_LITERAL,
   NODE_STRING_LITERAL,
@@ -73,6 +72,9 @@ struct AstNode {
     double Float;
     struct Symbol *symbol;
   } value;
+
+  /* TODO TEST */
+  int data_type;
 
   struct AstNode *left;
   struct AstNode *right;
