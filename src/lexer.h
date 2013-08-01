@@ -15,6 +15,7 @@ enum TokenTag {
   TK_COMMENT,
   */
   TK_IDENTIFIER,
+  /* TODO REVERT THIS */
   /*
   TK_CHAR_LITERAL,
   */
@@ -72,6 +73,7 @@ struct Token {
     char name[MAX_NAME_SIZE];
     const char *string;
   } value;
+  /* TODO REMOVE THIS */
   int data_type;
 };
 

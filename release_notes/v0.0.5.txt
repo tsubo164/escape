@@ -1,0 +1,13 @@
+The Escape programming language v0.0.5(Alpha) Release Notes
+===========================================================
+
+New features since v0.0.4
+-------------------------
+ * Implemented bool/char/short/long/float/double data types.
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * function definition
+ * struct
+

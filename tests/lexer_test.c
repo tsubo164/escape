@@ -138,7 +138,7 @@ int main()
 		Lexer_SetInputString(lexer, input_string);
 
 		Lexer_NextToken(lexer, &token);
-		TEST_INT(token.tag, TK_CHAR_LITERAL);
+		TEST_INT(token.tag, TK_INT_LITERAL);
 		TEST_INT(token.value.Integer, 'c');
 
 		Lexer_Free(lexer);
