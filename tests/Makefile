@@ -1,24 +1,24 @@
-CC = gcc
+CC = cc
 OPT = -O3
-CFLAGS = -I../src -Wall -ansi -pedantic-errors $(OPT)
+CFLAGS = -I../src -Wall -ansi $(OPT)
 LDFLAGS = -L../src -lesc
 
 RM = rm -f
 
-files   := lexer_test
+files   := lexer_test stream_test
 sources := $(addsuffix .c, $(files))
 objects := $(addsuffix .o, $(files))
 targets := $(files)
-test_object := Test.o
+test_object := unit_test.o
 
 .PHONY: all clean
 all: $(targets)
 
-$(test_object): Test.c Test.h
+$(test_object): unit_test.c unit_test.h
 	@echo '  compile $<'
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-$(objects): %.o: %.c Test.h ../src/libesc.a
+$(objects): %.o: %.c unit_test.h ../src/libesc.a
 	@echo '  compile $<'
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -32,4 +32,4 @@ check: $(targets)
 	done;
 
 clean:
-	$(RM) $(targets) $(objects) $(test_object)
+	$(RM) $(targets) $(objects) $(test_object) *.es

@@ -1,40 +1,42 @@
 /*
-Copyright (c) 2011-2012 Hiroshi Tsubokawa
+Copyright (c) 2012 Hiroshi Tsubokawa
 See LICENSE and README
 */
 
-#include "Test.h"
+#include "unit_test.h"
 #include <stdio.h>
 
 static int n_pass = 0;
 static int n_fail = 0;
 static int n_total = 0;
 
-void Test_Pass(const char *expr, const char *file, int line)
+void TestPass(const char *expr, const char *file, int line)
 {
+  /*
 	fprintf(stdout, "  :PASS :%s:%d: %s\n", file, line, expr);
+  */
 	n_pass++;
 	n_total++;
 }
 
-void Test_Fail(const char *expr, const char *file, int line)
+void TestFail(const char *expr, const char *file, int line)
 {
 	fprintf(stdout, "* :FAIL :%s:%d: %s\n", file, line, expr);
 	n_fail++;
 	n_total++;
 }
 
-int Test_GetPassCount()
+int TestGetPassCount()
 {
 	return n_pass;
 }
 
-int Test_GetFailCount()
+int TestGetFailCount()
 {
 	return n_fail;
 }
 
-int Test_GetTotalCount()
+int TestGetTotalCount()
 {
 	return n_total;
 }
@@ -54,13 +56,12 @@ static double RelDif(double a, double b)
   return d == 0.0 ? 0.0 : Abs(a - b) / d;
 }
 
-int Test_DoubleEq(double a, double b)
+int TestDoubleEq(double a, double b)
 {
 	return RelDif(a, b) <= 1e-15 ? 1 : 0;
 }
 
-int Test_FloatEq(float a, float b)
+int TestFloatEq(float a, float b)
 {
 	return RelDif(a, b) <= 1e-7 ? 1 : 0;
 }
-

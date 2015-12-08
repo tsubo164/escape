@@ -4,6 +4,97 @@ See LICENSE and README
 */
 
 #include "parser.h"
+
+static struct token *get_token(struct parser *p)
+{
+  return lex_get_token(&p->lex);
+}
+
+static struct token *unget_token(struct parser *p)
+{
+  return lex_unget_token(&p->lex);
+}
+
+static void var_decl(struct parser *p)
+{
+  struct token *tok;
+
+  tok = get_token(p);
+  if (kind_of(tok) == TK_VAR) {
+    printf("var ");
+  }
+
+  tok = get_token(p);
+  if (kind_of(tok) == TK_IDENT) {
+    printf("%s ", tok->value.word);
+  }
+
+  tok = get_token(p);
+  if (kind_of(tok) == '=') {
+    printf("= ");
+  }
+
+  tok = get_token(p);
+  if (kind_of(tok) == TK_INT_LITERAL) {
+    printf("%ld", tok->value.Integer);
+  }
+
+  tok = get_token(p);
+  if (kind_of(tok) == ';') {
+    printf(";\n");
+  }
+}
+
+static void statement(struct parser *p)
+{
+  struct token *tok = get_token(p);
+
+  switch (kind_of(tok)) {
+
+  case TK_VAR:
+    printf("var\n");
+    unget_token(p);
+    var_decl(p);
+    break;
+
+  default:
+    break;
+  }
+}
+
+/*
+static void statement_list(struct parser *p)
+{
+  for (;;) {
+  }
+}
+*/
+
+static void program(struct parser *p)
+{
+  struct token tok;
+
+  statement(p);
+
+  printf("program[%d]\n", kind_of(&tok));
+}
+
+int parse_file(struct parser *p, const char *filename)
+{
+  lex_input_file(&p->lex, filename);
+
+  program(p);
+
+  return 0;
+}
+
+void parse_finish(struct parser *p)
+{
+  lex_finish(&p->lex);
+}
+
+#if 0
+#include "parser.h"
 #include "datatype.h"
 #include "memory.h"
 #include "symbol.h"
@@ -1444,4 +1535,4 @@ static Node *program(Parser *parser)
 
   return NULL;
 }
-
+#endif

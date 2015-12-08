@@ -4,549 +4,151 @@ See LICENSE and README
 */
 
 #include "lexer.h"
-#include "datatype.h"
 #include "memory.h"
-
 #include <string.h>
 #include <ctype.h>
 
-#define isidentifier(c) (isalnum((c)) || (c)=='_')
+int kind_of(const struct token *tok)
+{
+  return tok->kind;
+}
 
-static char scan_name(struct Lexer *lexer, struct Token *token);
-static char scan_number(struct Lexer *lexer, struct Token *token);
+int int_value_of(const struct token *tok)
+{
+  return tok->value.Integer;
+}
 
-struct StringBuffer {
-  char *c;
-  int alloc;
-  int len;
+float float_value_of(const struct token *tok)
+{
+  return tok->value.Float;
+}
+
+const char *word_value_of(const struct token *tok)
+{
+  return tok->value.word;
+}
+
+static void fwd_tokbuf(struct lexer *l)
+{
+  l->tokcurr = (l->tokcurr + 1) % TOKBUF_SIZE;
+}
+
+static void bwd_tokbuf(struct lexer *l)
+{
+  l->tokcurr = (l->tokcurr - 1 + TOKBUF_SIZE) % TOKBUF_SIZE;
+}
+
+static void save_tok(struct lexer *l, const struct token *tok)
+{
+  l->tokbuf[l->tokcurr] = *tok;
+}
+
+static struct token *load_tok(struct lexer *l)
+{
+  return &l->tokbuf[l->tokcurr];
+}
+
+static char get_ch(struct lexer *l)
+{
+  const char c = stream_getc(&l->strm);
+  l->column++;
+  return c;
+}
+
+static char unget_ch(struct lexer *l)
+{
+  const char c = stream_ungetc(&l->strm);
+  l->column--;
+  return c;
+}
+
+static void detect_newline(struct lexer *l)
+{
+  l->line++;
+  l->column = 0;
+}
+
+static const struct keyword {
+  int id;
+  const char *word;
+} keywords[] = {
+#define T(id,str) {id, str},
+  KEYWORD_LIST(T)
+#undef T
+  {0, ""}
 };
 
-static struct StringBuffer *StringBuffer_New(void)
-{
-  struct StringBuffer *strbuf = NULL;
-
-  strbuf = MEMORY_ALLOC(struct StringBuffer);
-  if (strbuf == NULL) {
-    return NULL;
-  }
-
-  strbuf->c = NULL;
-  strbuf->alloc = 0;
-  strbuf->len = 0;
-
-  return strbuf;
-}
-
-static void StringBuffer_AppendChar(struct StringBuffer *strbuf, char c)
-{
-  if (strbuf->len + 1 >= strbuf->alloc) {
-    const int new_alloc = strbuf->alloc == 0 ? 128 : 2 * strbuf->alloc;
-    strbuf->c = MEMORY_REALLOC_ARRAY(strbuf->c, char, new_alloc);
-  }
-  strbuf->c[strbuf->len] = c;
-  strbuf->len++;
-  strbuf->c[strbuf->len] = '\0';
-}
-
-static void StringBuffer_Clear(struct StringBuffer *strbuf)
-{
-  if (strbuf->c == NULL) {
-    return;
-  }
-  strbuf->len = 0;
-  strbuf->c[0] = '\0';
-}
-
-static void StringBuffer_Free(struct StringBuffer *strbuf)
-{
-  if (strbuf == NULL) {
-    return;
-  }
-  MEMORY_FREE(strbuf->c);
-  MEMORY_FREE(strbuf);
-}
-
-struct Keyword {
-  const char *name;
-  int token_tag;
-  int data_type;
-};
-
-/* TODO should be decoupled from datatype? */
-/* sorted by alphabet */
-static const struct Keyword keywords[] = {
-  {"bool",     TK_BOOL,     TYPE_BOOL},
-  {"break",    TK_BREAK,    TYPE_NONE},
-  {"case",     TK_CASE,     TYPE_NONE},
-  {"char",     TK_CHAR,     TYPE_CHAR},
-  {"continue", TK_CONTINUE, TYPE_NONE},
-  {"default",  TK_DEFAULT,  TYPE_NONE},
-  {"do",       TK_DO,       TYPE_NONE},
-  {"double",   TK_DOUBLE,   TYPE_DOUBLE},
-  {"else",     TK_ELSE,     TYPE_NONE},
-  {"false",    TK_FALSE,    TYPE_BOOL},
-  {"float",    TK_FLOAT,    TYPE_FLOAT},
-  {"for",      TK_FOR,      TYPE_NONE},
-  {"function", TK_FUNCTION, TYPE_NONE},
-  {"goto",     TK_GOTO,     TYPE_NONE},
-  {"if",       TK_IF,       TYPE_NONE},
-  {"int",      TK_INT,      TYPE_INT},
-  {"label",    TK_LABEL,    TYPE_NONE},
-  {"long",     TK_LONG,     TYPE_LONG},
-  {"return",   TK_RETURN,   TYPE_NONE},
-  {"short",    TK_SHORT,    TYPE_SHORT},
-  {"string",   TK_STRING,   TYPE_STRING},
-  {"switch",   TK_SWITCH,   TYPE_NONE},
-  {"var",      TK_VAR,      TYPE_NONE},
-  {"vardump",  TK_VARDUMP,  TYPE_NONE},
-  {"while",    TK_WHILE,    TYPE_NONE}
-};
 static const size_t N_KEYWORDS = sizeof(keywords)/sizeof(keywords[0]);
-static int compare_keywords(const void *ptr0, const void *ptr1);
-static void keyword_or_identifier(struct Token *token);
-
-enum {
-  BUFFER_SIZE = 1024
-};
-enum {
-  INPUT_FILE = 0,
-  INPUT_STRING
-};
-
-static void detect_new_line(struct Lexer *lexer);
-static char get_next_char(struct Lexer *lexer);
-static char put_back_char(struct Lexer *lexer);
-
-struct Lexer {
-  int line_number;
-  int input_type;
-
-  char *buffer;
-  int nalloc;
-
-  const char *current_char;
-  FILE *input_file;
-
-  struct StringBuffer *string_literal;
-};
-
-struct Lexer *Lexer_New(void)
+static void keyword_or_identifier(struct token *tok)
 {
-  struct Lexer *lexer = NULL;
+  int i;
 
-  lexer = MEMORY_ALLOC(struct Lexer);
-  if (lexer == NULL) {
-    return NULL;
+  for (i = 0; i < N_KEYWORDS; i++) {
+    const struct keyword *key = &keywords[i];
+    if (strcmp(tok->value.word, key->word) == 0) {
+      tok->kind = key->id;
+      return;
+    }
   }
-
-  lexer->input_type = INPUT_FILE;
-  lexer->line_number = 1;
-
-  lexer->buffer = NULL;
-  lexer->nalloc = 0;
-
-  lexer->current_char = NULL;
-  lexer->input_file = NULL;
-
-  lexer->string_literal = StringBuffer_New();
-
-  return lexer;
+  tok->kind = TK_IDENT;
 }
 
-void Lexer_Free(struct Lexer *lexer)
+static int isidentifier(char c)
 {
-  if (lexer == NULL) {
-    return;
-  }
-  MEMORY_FREE(lexer->buffer);
-
-  StringBuffer_Free(lexer->string_literal);
-
-  MEMORY_FREE(lexer);
+  return isalnum(c) || c == '_';
 }
 
-int Lexer_NextToken(struct Lexer *lexer, struct Token *token)
+static char scan_word(struct lexer *l, struct token *tok)
 {
-  char ch = '\0';
+  char *dst = tok->value.word;
+  char c = '\0';
 
-state_initial:
-  ch = get_next_char(lexer);
-  switch (ch) {
-  case ' ':
-  case '\t':
-  case '\v':
-    goto state_initial;
-
-  case '\n':
-    detect_new_line(lexer);
-    goto state_initial;
-
-  case '\0':
-    token->tag = ch;
-    goto state_final;
-
-  case '"':
-    StringBuffer_Clear(lexer->string_literal);
-    goto state_string_literal;
-
-  case '\'':
-    ch = get_next_char(lexer);
-    if (!isalpha(ch)) {
-      token->tag = ch;
-      goto state_final;
-    }
-    token->value.Integer = ch;
-    token->tag = TK_INT_LITERAL;
-    token->data_type = TYPE_CHAR;
-    ch = get_next_char(lexer);
-    if (ch != '\'') {
-      /* TODO error handling */
-    }
-    goto state_final;
-
-  case '/':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '*':
-      goto state_block_comment;
-    case '/':
-      goto state_line_comment;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '<':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '=':
-      token->tag = TK_LE;
-      goto state_final;
-    case '<':
-      token->tag = TK_LSHIFT;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '>':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '=':
-      token->tag = TK_GE;
-      goto state_final;
-    case '>':
-      token->tag = TK_RSHIFT;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '=':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '=':
-      token->tag = TK_EQ;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '!':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '=':
-      token->tag = TK_NE;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '&':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '&':
-      token->tag = TK_AND;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '|':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '|':
-      token->tag = TK_OR;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '+':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '+':
-      token->tag = TK_INC;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '-':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '-':
-      token->tag = TK_DEC;
-      goto state_final;
-    default:
-      ch = put_back_char(lexer);
-      token->tag = ch;
-      goto state_final;
-    }
-
-  case '.':
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-  /*
-    ch = scan_number(lexer, token);
-  */
-    put_back_char(lexer);
-    ch = scan_number(lexer, token);
-    goto state_final;
-
-  case 'A': case 'B': case 'C': case 'D': case 'E':
-  case 'F': case 'G': case 'H': case 'I': case 'J':
-  case 'K': case 'L': case 'M': case 'N': case 'O':
-  case 'P': case 'Q': case 'R': case 'S': case 'T':
-  case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-  case 'a': case 'b': case 'c': case 'd': case 'e':
-  case 'f': case 'g': case 'h': case 'i': case 'j':
-  case 'k': case 'l': case 'm': case 'n': case 'o':
-  case 'p': case 'q': case 'r': case 's': case 't':
-  case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-    ch = scan_name(lexer, token);
-    goto state_final;
-
-  default:
-    token->tag = ch;
-    goto state_final;
-  }
-
-state_string_literal:
-  ch = get_next_char(lexer);
-  switch (ch) {
-  case '"':
-    token->tag = TK_STRING_LITERAL;
-    token->value.string = lexer->string_literal->c;
-    goto state_final;
-  default:
-    StringBuffer_AppendChar(lexer->string_literal, ch);
-    goto state_string_literal;
-  }
-
-state_block_comment:
-  ch = get_next_char(lexer);
-  switch (ch) {
-  case '*':
-    ch = get_next_char(lexer);
-    switch (ch) {
-    case '/':
-      goto state_initial;
-    default:
-      goto state_block_comment;
-    }
-
-  case '\0':
-    /* TODO error handling */
-    token->tag = ch;
-    goto state_final;
-
-  case '\n':
-    detect_new_line(lexer);
-    goto state_block_comment;
-
-  default:
-    goto state_block_comment;
-  }
-
-state_line_comment:
-  ch = get_next_char(lexer);
-  switch (ch) {
-  case '\n':
-    detect_new_line(lexer);
-    goto state_initial;
-
-  default:
-    goto state_line_comment;
-  }
-
-state_final:
-  return 0;
-}
-
-int Lexer_GetLineNumber(const struct Lexer *lexer)
-{
-  return lexer->line_number;
-}
-
-void Lexer_SetInputFile(struct Lexer *lexer, FILE *file)
-{
-  char *next_char = NULL;
-  int max_size = 0;
-
-  lexer->nalloc = BUFFER_SIZE;
-  lexer->buffer = MEMORY_ALLOC_ARRAY(char, BUFFER_SIZE);
-  if (lexer->buffer == NULL) {
-    /* TODO error handling */
-  }
-
-  lexer->input_file = file;
-  next_char = lexer->buffer + 1;
-  max_size = BUFFER_SIZE - 1;
-
-  lexer->buffer[0] = '\0';
-  lexer->buffer[1] = '\0';
-
-  if (fgets(next_char, max_size, lexer->input_file) == NULL) {
-    /* TODO */
-  }
-
-  lexer->current_char = lexer->buffer;
-  lexer->line_number = 1;
-  lexer->input_type = INPUT_FILE;
-}
-
-void Lexer_SetInputString(struct Lexer *lexer, const char *str)
-{
-  const size_t alloc_size = strlen(str)
-      + 1  /* for null char at end */
-      + 1; /* for the previous char from input */
-
-  lexer->nalloc = alloc_size;
-  lexer->buffer = MEMORY_ALLOC_ARRAY(char, alloc_size);
-  if (lexer->buffer == NULL) {
-    /* TODO error handling */
-  }
-  lexer->buffer[0] = '\0';
-
-  strncpy(lexer->buffer + 1, str, alloc_size - 1);
-
-  lexer->current_char = lexer->buffer;
-  lexer->line_number = 1;
-  lexer->input_type = INPUT_STRING;
-}
-
-static void detect_new_line(struct Lexer *lexer)
-{
-  char *next_char = NULL;
-  int max_size = 0;
-
-  lexer->line_number++;
-
-  if (lexer->input_type == INPUT_STRING) {
-    return;
-  }
-
-  if (lexer->input_file == NULL) {
-    return;
-  }
-
-  next_char = lexer->buffer + 1;
-  max_size = BUFFER_SIZE - 1;
-
-  lexer->buffer[0] = '\0';
-  lexer->buffer[1] = '\0';
-
-  if (fgets(next_char, max_size, lexer->input_file) == NULL) {
-    return;
-  }
-
-  lexer->current_char = lexer->buffer;
-}
-
-static char get_next_char(struct Lexer *lexer)
-{
-  if (lexer->current_char < lexer->buffer + lexer->nalloc - 1) {
-    lexer->current_char++;
-  }
-  return *(lexer->current_char);
-}
-
-static char put_back_char(struct Lexer *lexer)
-{
-  if (lexer->current_char > lexer->buffer) {
-    lexer->current_char--;
-  }
-  return *(lexer->current_char);
-}
-
-static char scan_name(struct Lexer *lexer, struct Token *token)
-{
-  const char *src = lexer->current_char;
-  char *dst = token->value.name;
-  const char *end = dst + MAX_NAME_SIZE - 1;
-
-  while (*src != '\0' && dst < end) {
-    if (isidentifier(*src)) {
-      *dst++ = *src++;
-      continue;
+  while ((c = get_ch(l)) != '\0') {
+    if (isidentifier(c)) {
+      *dst++ = c;
     } else {
+      c = unget_ch(l);
       break;
     }
   }
   *dst = '\0';
 
-  keyword_or_identifier(token);
-
-  lexer->current_char = src - 1;
-
-  return (*lexer->current_char);
+  keyword_or_identifier(tok);
+  return c;
 }
 
-static char scan_number(struct Lexer *lexer, struct Token *token)
+enum number_type {
+  NUM_INT,
+  NUM_DOUBLE,
+  NUM_FLOAT
+};
+
+static char scan_number(struct lexer *l, struct token *tok)
 {
   char buf[265] = {'\0'};
   char ch = '\0';
   char *end = NULL;
   int i = 0;
-
-  /* TODO TEST */
-  int data_type = TYPE_INT;
+  int num_type = NUM_INT;
 
 state_initial:
-  ch = get_next_char(lexer);
+  ch = get_ch(l);
 
   switch (ch) {
   case '+': case '-':
     if (i > 0) {
-      data_type = TYPE_DOUBLE;
+      num_type = NUM_DOUBLE;
     }
     buf[i++] = ch;
     goto state_initial;
 
-  case '.':
-  case 'e': case 'E':
-    data_type = TYPE_DOUBLE;
+  case '.': case 'e': case 'E':
+    num_type = NUM_DOUBLE;
     buf[i++] = ch;
     goto state_initial;
 
   case 'f': case 'F':
-    data_type = TYPE_FLOAT;
+    num_type = NUM_FLOAT;
     buf[i++] = ch;
     buf[i] = '\0';
     break;
@@ -561,20 +163,20 @@ state_initial:
 
   default:
     buf[i] = '\0';
-    ch = put_back_char(lexer);
+    ch = unget_ch(l);
     break;
   }
 
-  switch (data_type) {
-  case TYPE_FLOAT:
-  case TYPE_DOUBLE:
-    token->value.Float = strtod(buf, &end);
-    token->tag = TK_FLOAT_LITERAL;
+  switch (num_type) {
+  case NUM_FLOAT:
+  case NUM_DOUBLE:
+    tok->value.Float = strtod(buf, &end);
+    tok->kind = TK_FLOAT_LITERAL;
     break;
 
   default:
-    token->value.Integer = strtol(buf, &end, 0);
-    token->tag = TK_INT_LITERAL;
+    tok->value.Integer = strtol(buf, &end, 0);
+    tok->kind = TK_INT_LITERAL;
     break;
   }
 
@@ -582,134 +184,288 @@ state_initial:
     /* TODO BAD FORMAT */
   }
 
-  return (*lexer->current_char);
+  return ch;
 }
 
-#if 0
-typedef struct Digit {
-  long value;
-  int ndigits;
-} Digit;
-static Digit scan_digits(struct Lexer *lexer)
+static int read_token(struct lexer *l, struct token *tok)
 {
-  Digit digits = {0, 0};
-
-  for (;;) {
-    char ch = get_next_char(lexer);
-    if (!isdigit(ch)) {
-      put_back_char(lexer);
-      break;
-    }
-    digits.value = 10 * digits.value + (ch - '0');
-    digits.ndigits++;
-  }
-
-  return digits;
-}
-
-static double power(int x, int y)
-{
-  double p = 1;
-  int i;
-
-  if (y >= 0) {
-    for (i = 0; i < y; i++) {
-      p *= x;
-    }
-  } else {
-    for (i = 0; i < -y; i++) {
-      p *= x;
-    }
-    p = 1./p;
-  }
-
-  return p;
-}
-
-static char scan_number(struct Lexer *lexer, struct Token *token)
-{
-  Digit integer = {0, 0};
-  Digit decimal = {0, 0};
-  Digit exponent = {0, 0};
-  int is_frac = 0;
-  int is_expo = 0;
-  int e_sign = 1;
   char ch = '\0';
 
-  integer = scan_digits(lexer);
-
 state_initial:
-  ch = get_next_char(lexer);
+  ch = get_ch(l);
 
   switch (ch) {
-  case '.':
-    is_frac = 1;
-    decimal = scan_digits(lexer);
+  case ' ':
+  case '\t':
+  case '\v':
     goto state_initial;
 
-  case 'e': case 'E':
-    ch = get_next_char(lexer);
+  case '\n':
+    detect_newline(l);
+    goto state_initial;
+
+  case '+':
+    ch = get_ch(l);
+    switch (ch) {
+    case '+':
+      tok->kind = TK_INC;
+      goto state_final;
+    case '=':
+      tok->kind = TK_ADD_ASSIGN;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '-':
+    ch = get_ch(l);
     switch (ch) {
     case '-':
-      e_sign = -1;
-      break;
-    case '+':
-      e_sign = 1;
-      break;
+      tok->kind = TK_DEC;
+      goto state_final;
+    case '=':
+      tok->kind = TK_SUB_ASSIGN;
+      goto state_final;
     default:
-      put_back_char(lexer);
-      e_sign = 1;
-      break;
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
     }
-    is_expo = 1;
-    exponent = scan_digits(lexer);
-    goto state_initial;
 
-  case 'f': case 'F':
-    is_frac = 1;
-    break;
+  case '*':
+    ch = get_ch(l);
+    switch (ch) {
+    case '=':
+      tok->kind = TK_MUL_ASSIGN;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '/':
+    ch = get_ch(l);
+    switch (ch) {
+    case '*':
+      goto state_block_comment;
+    case '/':
+      goto state_line_comment;
+    case '=':
+      tok->kind = TK_DIV_ASSIGN;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '<':
+    ch = get_ch(l);
+    switch (ch) {
+    case '=':
+      tok->kind = TK_LE;
+      goto state_final;
+    case '<':
+      tok->kind = TK_LSHIFT;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '>':
+    ch = get_ch(l);
+    switch (ch) {
+    case '=':
+      tok->kind = TK_GE;
+      goto state_final;
+    case '>':
+      tok->kind = TK_RSHIFT;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '=':
+    ch = get_ch(l);
+    switch (ch) {
+    case '=':
+      tok->kind = TK_EQ;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '!':
+    ch = get_ch(l);
+    switch (ch) {
+    case '=':
+      tok->kind = TK_NE;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '&':
+    ch = get_ch(l);
+    switch (ch) {
+    case '&':
+      tok->kind = TK_AND;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '|':
+    ch = get_ch(l);
+    switch (ch) {
+    case '|':
+      tok->kind = TK_OR;
+      goto state_final;
+    default:
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '.':
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    unget_ch(l);
+    ch = scan_number(l, tok);
+    goto state_final;
+
+  case 'A': case 'B': case 'C': case 'D': case 'E':
+  case 'F': case 'G': case 'H': case 'I': case 'J':
+  case 'K': case 'L': case 'M': case 'N': case 'O':
+  case 'P': case 'Q': case 'R': case 'S': case 'T':
+  case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+  case 'a': case 'b': case 'c': case 'd': case 'e':
+  case 'f': case 'g': case 'h': case 'i': case 'j':
+  case 'k': case 'l': case 'm': case 'n': case 'o':
+  case 'p': case 'q': case 'r': case 's': case 't':
+  case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
+    unget_ch(l);
+    ch = scan_word(l, tok);
+    goto state_final;
 
   default:
-    put_back_char(lexer);
-    break;
+    tok->kind = ch;
+    goto state_final;
   }
 
-  if (is_frac) {
-    token->value.number = integer.value + decimal.value/power(10, decimal.ndigits);
-    token->tag = TK_NUMBER;
-  } else {
-    token->value.number = (double) integer.value;
-    token->tag = TK_NUMBER;
+state_block_comment:
+  ch = get_ch(l);
+  switch (ch) {
+  case '*':
+    ch = get_ch(l);
+    switch (ch) {
+    case '/':
+      goto state_initial;
+    default:
+      goto state_block_comment;
+    }
+  case '\0':
+    /* TODO error handling */
+    tok->kind = ch;
+    goto state_final;
+  case '\n':
+    detect_newline(l);
+    goto state_block_comment;
+  default:
+    goto state_block_comment;
   }
 
-  if (is_expo) {
-    token->value.number *= power(10, e_sign * exponent.value);
+state_line_comment:
+  ch = get_ch(l);
+  switch (ch) {
+  case '\n':
+    detect_newline(l);
+    goto state_initial;
+  default:
+    goto state_line_comment;
   }
 
-  return (*lexer->current_char);
+state_final:
+  return tok->kind;
 }
-#endif
 
-static void keyword_or_identifier(struct Token *token)
+int lex_input_string(struct lexer *l, const char *string)
 {
-  const struct Keyword *found = NULL;
-  struct Keyword key;
-  key.name = token->value.name;
+  int err = 0;
+  struct lexer ll = LEXER_INIT;
 
-  found = bsearch(&key, keywords, N_KEYWORDS, sizeof(keywords[0]), compare_keywords);
+  *l = ll;
+  err = open_string_stream(&l->strm, string);
 
-  if (found) {
-    token->tag       = found->token_tag;
-    token->data_type = found->data_type;
-  } else {
-    token->tag = TK_IDENTIFIER;
-  }
+  if (err)
+    return -1;
+  else
+    return 0;
 }
 
-static int compare_keywords(const void *ptr0, const void *ptr1)
+int lex_input_file(struct lexer *l, const char *filename)
 {
-  const struct Keyword *kw0 = (const struct Keyword *) ptr0;
-  const struct Keyword *kw1 = (const struct Keyword *) ptr1;
-  return strcmp(kw0->name, kw1->name);
+  int err = 0;
+  struct lexer ll = LEXER_INIT;
+
+  *l = ll;
+  err = open_file_stream(&l->strm, filename);
+
+  if (err)
+    return -1;
+  else
+    return 0;
 }
 
+void lex_finish(struct lexer *l)
+{
+  close_stream(&l->strm);
+}
+
+struct token *lex_get_token(struct lexer *l)
+{
+  if (l->is_head) {
+    struct token tok;
+    read_token(l, &tok);
+    fwd_tokbuf(l);
+    save_tok(l, &tok);
+  } else {
+    l->is_head = 1;
+    fwd_tokbuf(l);
+  }
+
+  return load_tok(l);
+}
+
+struct token *lex_unget_token(struct lexer *l)
+{
+  if (l->is_head) {
+    l->is_head = 0;
+    bwd_tokbuf(l);
+  }
+
+  return load_tok(l);
+}
+
+int lex_get_line_num(const struct lexer *l)
+{
+  return l->line;
+}
+
+int lex_get_column_num(const struct lexer *l)
+{
+  return l->column;
+}

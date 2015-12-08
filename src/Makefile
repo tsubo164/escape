@@ -1,60 +1,51 @@
-CC = gcc
+CC = cc
 OPT = -O3
-CFLAGS = -Wall -ansi -pedantic-errors $(OPT)
+CFLAGS = -Wall -ansi $(OPT)
 LDFLAGS = -lm
-
 RM = rm -f
-INSTALL = install
 
+topdir      := ..
+target_dir  := src
+target_name := ec
 library     := libesc.a
+files       := \
+		lexer parser stream
 
-files   := ast datatype lexer parser symbol
+incdir  := $(topdir)/src
+#libdir  := $(topdir)/lib
+target  := $(topdir)/$(target_dir)/$(target_name)
+
 sources := $(addsuffix .c, $(files))
 objects := $(addsuffix .o, $(files))
+depends := $(addsuffix .d, $(files))
 
-.PHONY: all clean install depend
-all: print-tree print-c-code
+.PHONY: all clean depend
+all: $(target)
+
+ec.o: ec.c
+	@echo '  compile $<'
+	@$(CC) $(CFLAGS) -c -o $@ $<
 
 $(objects): %.o: %.c
 	@echo '  compile $<'
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
+$(target): ec.o $(library)
+	@echo '  link $(target_name)'
+	@$(CC) -o $@ $^ $(LDFLAGS)
+
 $(library): $(objects)
 	@echo '  archive $^'
 	@ar rc $@ $^
 
-#print-c-code
-main-print-c-code.o: main-print-c-code.c
-	@echo '  compile $<'
-	@$(CC) $(CFLAGS) -c -o $@ $<
-
-print-c-code: main-print-c-code.o $(library);
-	@echo '  link $^'
-	@$(CC) -o $@ $^ $(LDFLAGS)
-
-#print-tree
-main-print-tree.o: main-print-tree.c
-	@echo '  compile $<'
-	@$(CC) $(CFLAGS) -c -o $@ $<
-
-print-tree: main-print-tree.o $(library);
-	@echo '  link $^'
-	@$(CC) -o $@ $^ $(LDFLAGS)
+$(depends): %.d: %.c
+	@echo '  dependency $<'
+	@$(CC) $(CFLAGS) -I$(incdir) -c -MM $< > $@
 
 clean:
-	$(RM) $(library) $(objects)
-	$(RM) main-print-tree.o print-tree
-	$(RM) main-print-c-code.o print-c-code
+	@echo '  clean $(target_name)'
+	@$(RM) $(target) $(library) $(objects) $(depends) ec.o
 
-depend:
-	$(CC) $(CFLAGS) -c -MM $(sources) main-print-c-code.c main-print-tree.c
-
-#-------------------------------------------------------------------------------
-ast.o: ast.c ast.h datatype.h memory.h symbol.h
-datatype.o: datatype.c datatype.h
-lexer.o: lexer.c lexer.h datatype.h memory.h
-parser.o: parser.c parser.h datatype.h memory.h symbol.h lexer.h ast.h
-symbol.o: symbol.c symbol.h datatype.h memory.h
-main-print-c-code.o: main-print-c-code.c datatype.h parser.h symbol.h \
-  lexer.h ast.h
-main-print-tree.o: main-print-tree.c parser.h symbol.h datatype.h ast.h
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(depends)
+endif

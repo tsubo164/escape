@@ -6,6 +6,18 @@ See LICENSE and README
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "lexer.h"
+
+struct parser {
+  struct lexer lex;
+};
+
+#define PARSER_INIT {LEXER_INIT}
+
+extern int parse_file(struct parser *p, const char *filename);
+extern void parse_finish(struct parser *p);
+
+#if 0
 #include <stdio.h>
 
 struct Parser;
@@ -29,6 +41,6 @@ struct ErrorInfo {
 extern int Parser_GetErrorCount(const struct Parser *parser);
 extern int Parser_GetMaxErrorInfo(const struct Parser *parser);
 extern const struct ErrorInfo *Parser_GetErrorInfo(struct Parser *parser, int index);
+#endif
 
 #endif /* XXX_H */
-
