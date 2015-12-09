@@ -4,7 +4,10 @@
  *   $ ./a.out
  */
 
-var n = 0;
+var i = 0;
+var n int; // = 0
+var hoge int = 123;
+var foo int = 999111;
 
 fn main() int
 {

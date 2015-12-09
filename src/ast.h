@@ -6,6 +6,43 @@ See LICENSE and README
 #ifndef AST_H
 #define AST_H
 
+#define AST_KIND_LIST(T) \
+  T(AST_INT_LITERAL, "int_literal") \
+  T(AST_LIST, "list") \
+  T(AST_VAR_DECL, "var_decl")
+
+enum ast_kind {
+  AST_BEGIN = 0,
+#define T(tag,str) tag,
+  AST_KIND_LIST(T)
+#undef T
+  AST_END
+};
+
+struct node {
+  int kind;
+  union {
+    /* int literal */
+    long ivalue;
+    /* list */
+    struct {
+      struct node *next;
+    };
+    /* var decl */
+    struct {
+      struct node *init;
+    };
+    /*  */
+    struct {
+      struct node *lnode;
+      struct node *rnode;
+    };
+  };
+};
+
+#define NODE_INIT {0,NULL,NULL}
+
+#if 0
 struct Symbol;
 
 enum AstNodeType {
@@ -90,6 +127,6 @@ extern struct Symbol *AstNode_Symbol(const struct AstNode *node);
 extern long AstNode_IntegerValue(const struct AstNode *node);
 
 extern void AstNode_Print(const struct AstNode *node);
+#endif
 
 #endif /* XXX_H */
-

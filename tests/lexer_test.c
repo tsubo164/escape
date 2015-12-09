@@ -26,7 +26,7 @@ int main()
   }
 	{
 		struct lexer l = LEXER_INIT;
-		struct token *tok;
+		const struct token *tok;
 
 		lex_input_file(&l, filename);
 

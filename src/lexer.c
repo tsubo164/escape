@@ -5,28 +5,9 @@ See LICENSE and README
 
 #include "lexer.h"
 #include "memory.h"
+#include "token.h"
 #include <string.h>
 #include <ctype.h>
-
-int kind_of(const struct token *tok)
-{
-  return tok->kind;
-}
-
-int int_value_of(const struct token *tok)
-{
-  return tok->value.Integer;
-}
-
-float float_value_of(const struct token *tok)
-{
-  return tok->value.Float;
-}
-
-const char *word_value_of(const struct token *tok)
-{
-  return tok->value.word;
-}
 
 static void fwd_tokbuf(struct lexer *l)
 {
@@ -435,7 +416,7 @@ void lex_finish(struct lexer *l)
   close_stream(&l->strm);
 }
 
-struct token *lex_get_token(struct lexer *l)
+const struct token *lex_get_token(struct lexer *l)
 {
   if (l->is_head) {
     struct token tok;
@@ -450,7 +431,7 @@ struct token *lex_get_token(struct lexer *l)
   return load_tok(l);
 }
 
-struct token *lex_unget_token(struct lexer *l)
+const struct token *lex_unget_token(struct lexer *l)
 {
   if (l->is_head) {
     l->is_head = 0;

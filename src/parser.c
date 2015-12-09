@@ -4,87 +4,218 @@ See LICENSE and README
 */
 
 #include "parser.h"
+#include "memory.h"
+#include <assert.h>
 
-static struct token *get_token(struct parser *p)
+typedef struct node node_t;
+typedef struct token token_t;
+typedef struct parser parser_t;
+
+static const token_t *get_token(parser_t *p)
 {
   return lex_get_token(&p->lex);
 }
 
-static struct token *unget_token(struct parser *p)
+static const token_t *unget_token(parser_t *p)
 {
   return lex_unget_token(&p->lex);
 }
 
-static void var_decl(struct parser *p)
+static int assert_next(parser_t *p, int kind)
 {
-  struct token *tok;
-
-  tok = get_token(p);
-  if (kind_of(tok) == TK_VAR) {
-    printf("var ");
+  const token_t *tok = get_token(p);
+  if (kind_of(tok) == kind) {
+    printf("%s ", token_to_string(tok));
+    return 1;
   }
-
-  tok = get_token(p);
-  if (kind_of(tok) == TK_IDENT) {
-    printf("%s ", tok->value.word);
+  else {
+    fprintf(stderr, "error assert_next\n");
   }
+  return 0;
+}
 
-  tok = get_token(p);
-  if (kind_of(tok) == '=') {
-    printf("= ");
-  }
-
-  tok = get_token(p);
-  if (kind_of(tok) == TK_INT_LITERAL) {
-    printf("%ld", tok->value.Integer);
-  }
-
-  tok = get_token(p);
-  if (kind_of(tok) == ';') {
-    printf(";\n");
+static const token_t *expect(parser_t *p, int kind)
+{
+  const token_t *tok = get_token(p);
+  if (kind_of(tok) == kind) {
+    /*
+    printf("%s ", token_to_string(tok));
+    */
+    return tok;
+  } else {
+    fprintf(stderr, "syntax error\n");
+    return NULL;
   }
 }
 
-static void statement(struct parser *p)
+static int is_next(parser_t *p, int kind)
 {
-  struct token *tok = get_token(p);
-
-  switch (kind_of(tok)) {
-
-  case TK_VAR:
-    printf("var\n");
+  const token_t *tok = get_token(p);
+  if (kind_of(tok) == kind) {
+    printf("%s ", token_to_string(tok));
+    return 1;
+  } else {
     unget_token(p);
-    var_decl(p);
-    break;
-
-  default:
-    break;
+    return 0;
   }
+}
+
+node_t *new_node(int kind)
+{
+  node_t *n = MEM_ALLOC(node_t);
+  n->kind = kind;
+  return n;
+}
+
+static node_t *list_node(node_t *current, node_t *next)
+{
+  return current->next = next;
+}
+
+node_t *ast_int_literal(long value)
+{
+  node_t *n = new_node(AST_INT_LITERAL);
+  n->ivalue = value;
+  return n;
+}
+
+node_t *ast_var_decl(node_t *init)
+{
+  node_t *n = new_node(AST_VAR_DECL);
+  n->init = init;
+  return n;
 }
 
 /*
-static void statement_list(struct parser *p)
-{
-  for (;;) {
-  }
-}
+primary_expression
+  : TK_INT_LITERAL
+  | TK_FLOAT_LITERAL
+  | TK_IDENTIFIER
+  | '(' expression ')'
+  ;
 */
-
-static void program(struct parser *p)
+static node_t *primary_expression(parser_t *p)
 {
-  struct token tok;
+  const token_t *tok = get_token(p);
 
-  statement(p);
+  switch (kind_of(tok)) {
+  case TK_INT_LITERAL:
+    return ast_int_literal(tok->value.Integer);
+    break;
+  default:
+    break;
+  }
+  return NULL;
+}
 
-  printf("program[%d]\n", kind_of(&tok));
+/*
+expression
+  : logical_or_expression
+  ;
+*/
+static node_t *expression(parser_t *p)
+{
+  return primary_expression(p);
+}
+
+/*
+variable_declaration
+  : "var" identifier type ';'
+  : "var" identifier [type] = expression ';'
+  ;
+*/
+static node_t *variable_declaration(parser_t *p)
+{
+  const token_t *tok = NULL;
+  node_t *expr = NULL;
+  assert_next(p, TK_VAR);
+
+  tok = expect(p, TK_IDENT);
+  if (!tok) {
+    return NULL;
+  }
+  printf("%s ", word_value_of(tok));
+
+#if n
+  tok = get_token(p);
+  if (kind_of(tok) != TK_IDENT) {
+    return NULL;
+  }
+  printf("%s ", word_value_of(tok));
+#endif
+
+  if (is_next(p, TK_INT)) {
+  }
+
+  if (is_next(p, '=')) {
+    expr = expression(p);
+    printf("%ld", expr->ivalue);
+  }
+
+  tok = expect(p, ';');
+  if (!tok) {
+    return NULL;
+  }
+  printf(";\n");
+  /*
+  printf("%s ", word_value_of(tok));
+  if (expect(p, ';')) {
+    printf("\n");
+  }
+  */
+
+  return ast_var_decl(expr);
+}
+
+/*
+statement
+  : variable_declaration
+  | ...
+  ;
+*/
+static node_t *statement(parser_t *p)
+{
+  const token_t *tok = get_token(p);
+  switch (kind_of(tok)) {
+  case TK_VAR:
+    unget_token(p);
+    return variable_declaration(p);
+    break;
+  default:
+    break;
+  }
+  return NULL;
+}
+
+/*
+statement_list
+  : statement
+  | statement statement_list
+  ;
+*/
+static node_t *statement_list(parser_t *p)
+{
+  node_t *stmt = statement(p);
+  if (stmt == NULL) {
+    return NULL;
+  }
+  return list_node(stmt, statement_list(p));
+}
+
+/*
+program
+  : statement_list
+  ;
+*/
+static node_t *program(parser_t *p)
+{
+  return statement_list(p);
 }
 
 int parse_file(struct parser *p, const char *filename)
 {
   lex_input_file(&p->lex, filename);
-
   program(p);
-
   return 0;
 }
 
@@ -93,6 +224,7 @@ void parse_finish(struct parser *p)
   lex_finish(&p->lex);
 }
 
+/* oldsrc */
 #if 0
 #include "parser.h"
 #include "datatype.h"
