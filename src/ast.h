@@ -9,38 +9,41 @@ See LICENSE and README
 #define AST_KIND_LIST(T) \
   T(AST_LITERAL, "literal") \
   T(AST_LIST, "list") \
+  T(AST_BREAK, "break") \
+  T(AST_CONTINUE, "continue") \
+  T(AST_RETURN, "return") \
   T(AST_VAR_DECL, "var_decl")
 
 enum ast_kind {
-  AST_BEGIN = 0,
 #define T(tag,str) tag,
   AST_KIND_LIST(T)
 #undef T
-  AST_END
+  AST_NUL
 };
 
-struct node {
+struct ast_node {
   int kind;
+  struct ast_node *lnode;
+  struct ast_node *rnode;
+
   union {
+    char word[128];
     /* int literal */
     long ivalue;
     /* list */
     struct {
-      struct node *next;
+      struct ast_node *next;
     };
     /* var decl */
     struct {
-      struct node *init;
-    };
-    /*  */
-    struct {
-      struct node *lnode;
-      struct node *rnode;
+      struct ast_node *init;
     };
   };
 };
 
 #define NODE_INIT {0,NULL,NULL}
+
+extern void ast_print_tree(const struct ast_node *node);
 
 #if 0
 struct Symbol;

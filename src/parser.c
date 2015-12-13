@@ -6,8 +6,9 @@ See LICENSE and README
 #include "parser.h"
 #include "memory.h"
 #include <assert.h>
+#include <string.h>
 
-typedef struct node node_t;
+typedef struct ast_node node_t;
 typedef struct token token_t;
 typedef struct parser parser_t;
 
@@ -25,27 +26,31 @@ static int assert_next(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    printf("%s ", kind_to_string(tok->kind));
     return 1;
   }
   else {
-    fprintf(stderr, "error assert_next\n");
+    fprintf(stderr, "compiler implementation error, ");
+    fprintf(stderr, "assert '%s' but got '%s'.\n",
+        kind_to_string(kind), kind_to_string(tok->kind));
+    exit(1);
   }
   return 0;
 }
 
-static const token_t *expect(parser_t *p, int kind)
+static int expect(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    return tok;
+    return 1;
   } else {
     fprintf(stderr, "syntak error, expected '%s' but got '%s'.\n",
         kind_to_string(kind), kind_to_string(tok->kind));
-    return NULL;
+    exit(1);
+    return 0;
   }
 }
 
+/*
 static int is_next(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
@@ -57,23 +62,32 @@ static int is_next(parser_t *p, int kind)
     return 0;
   }
 }
+*/
 
 node_t *new_node(int kind)
 {
   node_t *n = MEM_ALLOC(node_t);
   n->kind = kind;
+  n->lnode = NULL;
+  n->rnode = NULL;
   return n;
 }
 
 static node_t *list_node(node_t *current, node_t *next)
 {
+  node_t *node = new_node(AST_LIST);
+  node->lnode = current;
+  node->rnode = next;
+  return node;
+  /*
   return current->next = next;
+  */
 }
 
-node_t *ast_int_literal(long value)
+node_t *ast_number(const char *number_string)
 {
   node_t *n = new_node(AST_LITERAL);
-  n->ivalue = value;
+  strcpy(n->word,number_string);
   return n;
 }
 
@@ -84,55 +98,1342 @@ node_t *ast_var_decl(node_t *init)
   return n;
 }
 
-/* prototypes */
+/* TODO ----------------------------------------------------------------- */
+static void parse_error(parser_t *p, const char *detail)
+{
+#if 0
+  ErrorInfo *info = NULL;
+
+  if (p->error_count >= Parser_GetMaxErrorInfo(p)) {
+    p->error_count++;
+    return;
+  }
+
+  info = &p->errors[p->error_count];
+  info->line_number = Lexer_GetLineNumber(p->lexer);
+  info->detail = detail;
+
+  p->error_count++;
+#endif
+}
+
+/* -------------------------------------------------------------------------- */
+#if 0
+static struct SymbolTable *symbol_table(const parser_t *p)
+{
+  return p->table;
+}
+
+static const Token *get_current_token(const parser_t *p)
+{
+  return &p->token_buf[p->curr_token_index];
+}
+
+static int token_tag(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->tag;
+}
+
+static DataType token_data_type(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->data_type;
+}
+
+static const char *token_name(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->value.name;
+}
+
+static double token_integer_value(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->value.Integer;
+}
+
+static double token_float_value(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->value.Float;
+}
+
+static const char *token_string(const parser_t *p) {
+  const Token *token = get_current_token(p);
+  return token->value.string;
+}
+
+static int get_next_token(parser_t *p)
+{
+  for (;;) {
+    Token *token = NULL;
+    p->curr_token_index = (p->curr_token_index + 1) % TOKEN_BUF_SIZE;
+    token = &p->token_buf[p->curr_token_index];
+
+    if (p->is_head_token) {
+      Lexer_NextToken(p->lexer, token);
+    }
+    p->is_head_token = 1;
+
+#if 0
+    switch (token_tag(p)) {
+    /*
+    case TK_COMMENT:
+      continue;
+    */
+    default:
+      break;
+    }
+#endif
+
+    break;
+  }
+
+  return token_tag(p);
+}
+#endif
+
+static void skip_until(parser_t *p, int until_tag)
+{
+  while (kind_of(get_token(p)) != until_tag) {
+    /* do nothing */
+  }
+}
+
+static int peek_token(parser_t *p)
+{
+  const token_t *tok = get_token(p);
+  const int kind = tok->kind;
+  unget_token(p);
+  return kind;
+}
+
+#if 0
+static Symbol *new_symbol(parser_t *p, int symbol_type)
+{
+  Symbol *symbol = SymbolTable_Add(
+      symbol_table(p),
+      token_name(p),
+      symbol_type);
+
+  if (symbol == NULL) {
+    return NULL;
+  }
+
+  return symbol;
+}
+#endif
+
+#if 0
+/* TODO TEST */
+typedef struct NodeList {
+  node_t *head;
+  node_t *tail;
+} NodeList;
+#define LIST_INIT {NULL, NULL}
+
+static node_t *append(NodeList *list, node_t *node)
+{
+  if (node == NULL) {
+    return NULL;
+  }
+
+  if (list->tail == NULL) {
+    list->tail = list_node(node, NULL);
+    list->head = list->tail;
+  } else {
+    list->tail->rnode = list_node(node, NULL);
+    list->tail = list->tail->rnode;
+  }
+  return node;
+}
+#endif
+
+#if 0
+static DataType type_specifier(parser_t *p)
+{
+  DataType data_type = TYPE_NONE;
+
+  get_next_token(p);
+  data_type = token_data_type(p);
+
+  if (data_type == TYPE_NONE) {
+    put_back_token(p);
+    return TYPE_NONE;
+  }
+
+  return data_type;
+}
+#endif
+
+/*
+argument_expression_list
+  ;
+*/
+#if 0
+static node_t *argument_expression_list(parser_t *p)
+{
+  Symbol *symbol = NULL;
+  node_t *node = NULL;
+
+  switch (peek_next_token(p)) {
+
+  case TK_STRING_LITERAL:
+    get_next_token(p);
+    symbol = SymbolTable_Add(
+        symbol_table(p),
+        token_string(p),
+        SYM_STRING_LITERAL);
+    node = AstNode_New(NODE_STRING_LITERAL);
+    node->value.symbol = symbol;
+    break;
+
+  default:
+    break;
+  }
+
+  return node;
+}
+#endif
+
+/* PROTOTYPES */
+static node_t *statement(parser_t *p);
 static node_t *expression(parser_t *p);
 
 /*
 primary_expression
-  : TK_NUMBER
+  : TK_INT_LITERAL
+  | TK_FLOAT_LITERAL
   | TK_IDENTIFIER
   | '(' expression ')'
   ;
 */
 static node_t *primary_expression(parser_t *p)
 {
-  node_t *expr = NULL;
+  /*
+  Symbol *symbol = NULL;
+  */
+  node_t *node = NULL;
   const token_t *tok = get_token(p);
 
   switch (kind_of(tok)) {
+
   case TK_NUMBER:
-    return ast_int_literal(tok->value.Integer);
-    break;
+    return ast_number(word_value_of(tok));
 
   case TK_IDENTIFIER:
-    printf("[%s]\n", word_value_of(tok));
+#if 0
+    {
+      /* TODO TMP */
+      if (strcmp(word_value_of(tok), "print") == 0) {
+        symbol = SymbolTable_Add(
+            symbol_table(p),
+            token_name(p),
+            SYM_FUNCTION);
+      }
+    }
+    symbol = SymbolTable_Lookup(
+        symbol_table(p),
+        token_name(p));
+    if (symbol == NULL) {
+      /* TODO error handling */
+    }
+#endif
+    return new_node(AST_NUL);
     break;
 
   case '(':
-    printf("----------\n");
-    expr = expression(p);
+    node = expression(p);
     if (!expect(p, ')')) {
-      return NULL;
+      parse_error(p, "missing ')' in expression"/*, token_string(p)*/);
     }
     break;
 
   default:
+    parse_error(p, "unexpected token");
+    unget_token(p);
+    node = new_node(AST_NUL);
     break;
   }
-  return expr;
+
+  return node;
+}
+
+/*
+postfix_expression
+  : primary_expression
+  | postfix_expression TK_INC
+  | postfix_expression TK_DEC
+  | postfix_expression '(' argument_expression_list ')'
+  ;
+*/
+static node_t *postfix_expression(parser_t *p)
+{
+  node_t *root = primary_expression(p);
+#if 0
+  const token_t *tok = get_token(p);
+  if (kind_of(tok) == TK_INC) {
+  }
+  else if (kind_of(tok) == TK_INC) {
+  }
+  if (expect(p, TK_INC) || expect(p, TK_DEC)) {
+    const int new_op = kind_of(p) == TK_INC ? NODE_POST_INC : NODE_POST_DEC;
+    root = new_node(new_op, root, NULL);
+  }
+  /* TODO TEST */
+  else if (expect(p, '(')) {
+    node_t *args = argument_expression_list(p);
+
+    if (!expect(p, ')')) {
+      parse_error(p, "missing ')' at the end of function call");
+      skip_until(p, ';');
+    }
+
+    root = new_node(NODE_CALL_EXPR, root, args);
+  }
+#endif
+  return root;
+}
+
+/*
+unary_expression
+  : postfix_expression
+  | TK_INC unary_expression
+  | TK_DEC unary_expression
+  ;
+*/
+static node_t *unary_expression(parser_t *p)
+{
+  node_t *root = NULL;
+#if 0
+  if (expect(p, TK_INC) || expect(p, TK_DEC)) {
+    const int new_op = token_tag(p) == TK_INC ? NODE_INC : NODE_DEC;
+    root = new_node(new_op, root, unary_expression(p));
+  } else {
+    root = postfix_expression(p);
+  }
+#endif
+  return root;
+}
+
+/*
+multiplicative_expression
+  : unary_expression
+  | multiplicative_expression '*' unary_expression
+  | multiplicative_expression '/' unary_expression
+  ;
+*/
+static node_t *multiplicative_expression(parser_t *p)
+{
+  node_t *root = unary_expression(p);
+#if 0
+  while (expect(p, '*') || expect(p, '/') || expect(p, '%')) {
+    int new_op = NODE_NULL;
+    switch (token_tag(p)) {
+    case '*': new_op = NODE_MUL; break;
+    case '/': new_op = NODE_DIV; break;
+    case '%': new_op = NODE_MOD; break;
+    }
+    root = new_node(new_op, root, unary_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+additive_expression
+  : multiplicative_expression
+  | additive_expression '+' multiplicative_expression
+  | additive_expression '-' multiplicative_expression
+  ;
+*/
+static node_t *additive_expression(parser_t *p)
+{
+  node_t *root = multiplicative_expression(p);
+#if 0
+  while (expect(p, '+') || expect(p, '-')) {
+    const int new_op = token_tag(p) == '+' ? NODE_ADD : NODE_SUB;
+    root = new_node(new_op, root, multiplicative_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+shift_expression
+  : additive_expression
+  | shift_expression TK_LSHIFT additive_expression
+  | shift_expression TK_RSHIFT additive_expression
+  ;
+*/
+static node_t *shift_expression(parser_t *p)
+{
+  node_t *root = additive_expression(p);
+#if 0
+  while (expect(p, TK_LSHIFT) || expect(p, TK_RSHIFT)) {
+    const int new_op = token_tag(p) == TK_LSHIFT ? NODE_LSHIFT : NODE_RSHIFT;
+    root = new_node(new_op, root, additive_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+relational_expression
+  : shift_expression
+  | relational_expression '<' shift_expression
+  | relational_expression '>' shift_expression
+  | relational_expression TK_LE shift_expression
+  | relational_expression TK_GE shift_expression
+  ;
+*/
+static node_t *relational_expression(parser_t *p)
+{
+  node_t *root = shift_expression(p);
+#if 0
+  while (expect(p, '<')   ||
+         expect(p, '>')   ||
+         expect(p, TK_LE) ||
+         expect(p, TK_GE)) {
+    int new_op = NODE_NULL;
+    switch (token_tag(p)) {
+    case '<':   new_op = NODE_LT; break;
+    case '>':   new_op = NODE_GT; break;
+    case TK_LE: new_op = NODE_LE; break;
+    case TK_GE: new_op = NODE_GE; break;
+    }
+    root = new_node(new_op, root, shift_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+equality_expression
+  : relational_expression
+  | equality_expression TK_EQ relational_expression
+  | equality_expression TK_NE relational_expression
+  ;
+*/
+static node_t *equality_expression(parser_t *p)
+{
+  node_t *root = relational_expression(p);
+#if 0
+  while (expect(p, TK_EQ) || expect(p, TK_NE)) {
+    const int new_op = token_tag(p) == TK_EQ ? NODE_EQ : NODE_NE;
+    root = new_node(new_op, root, relational_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+bitwise_and_expression
+  : equality_expression
+  | bitwise_and_expression '&' equality_expression
+  ;
+*/
+static node_t *bitwise_and_expression(parser_t *p)
+{
+  node_t *root = equality_expression(p);
+#if 0
+  while (expect(p, '&')) {
+    root = new_node(NODE_BITWISE_AND, root, equality_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+bitwise_xor_expression
+  : bitwise_and_expression
+  | bitwise_xor_expression '^' bitwise_and_expression
+  ;
+*/
+static node_t *bitwise_xor_expression(parser_t *p)
+{
+  node_t *root = bitwise_and_expression(p);
+#if 0
+  while (expect(p, '^')) {
+    root = new_node(NODE_BITWISE_XOR, root, bitwise_and_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+bitwise_or_expression
+  : bitwise_xor_expression
+  | bitwise_or_expression '|' bitwise_xor_expression
+  ;
+*/
+static node_t *bitwise_or_expression(parser_t *p)
+{
+  node_t *root = bitwise_xor_expression(p);
+#if 0
+  while (expect(p, '|')) {
+    root = new_node(NODE_BITWISE_OR, root, bitwise_xor_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+logical_and_expression
+  : bitwise_or_expression
+  | logical_and_expression TK_AND bitwise_or_expression
+  ;
+*/
+static node_t *logical_and_expression(parser_t *p)
+{
+  node_t *root = bitwise_or_expression(p);
+#if 0
+  while (expect(p, TK_AND)) {
+    root = new_node(NODE_AND, root, bitwise_or_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+logical_or_expression
+  : logical_and_expression
+  | logical_or_expression TK_OR logical_and_expression
+  ;
+*/
+static node_t *logical_or_expression(parser_t *p)
+{
+  node_t *root = logical_and_expression(p);
+#if 0
+  while (expect(p, TK_OR)) {
+    root = new_node(NODE_OR, root, logical_and_expression(p));
+  }
+#endif
+  return root;
+}
+
+/*
+assignment_expression
+  : conditional_expression
+  | unary_expression '=' assignment_expression
+  ;
+*/
+static node_t *assignment_expression(parser_t *p)
+{
+  node_t *lval = logical_or_expression(p);
+#if 0
+  if (expect(p, '=')) {
+    return new_node(NODE_ASSIGN, lval, expression(p));
+  }
+#endif
+  return lval;
 }
 
 /*
 expression
-  : assignment_expression
+  : logical_or_expression
   ;
 */
 static node_t *expression(parser_t *p)
 {
-  /* TODO TEMP */
-  return primary_expression(p);
+  node_t *node = assignment_expression(p);
+  return node;
 }
 
+/*
+expression_statement
+  : ';'
+  | expression ';'
+  ;
+*/
+static node_t *expression_statement(parser_t *p)
+{
+  node_t *expr = expression(p);
+#if 0
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of expression statement");
+    skip_until(p, ';');
+  }
+  return new_node(NODE_EXPR_STMT, expr, NULL);
+#endif
+  return expr;
+}
+
+/*
+null_statement
+  : ';'
+  ;
+*/
+static node_t *null_statement(parser_t *p)
+{
+  assert_next(p, ';');
+  return new_node(AST_NUL);
+}
+
+/*
+vardump_statement
+  : "vardump" identifier
+  ;
+*/
+static node_t *vardump_statement(parser_t *p)
+{
+  node_t *stmt = NULL;
+#if 0
+  Symbol *symbol = NULL;
+
+  assert_next_token(p, TK_VARDUMP);
+
+  if (!expect(p, TK_IDENTIFIER)) {
+    parse_error(p, "missing identifier after 'vardump'");
+    skip_until(p, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symbol = SymbolTable_Lookup(
+      symbol_table(p),
+      token_name(p));
+
+  if (symbol == NULL) {
+    parse_error(p, "undefined variable specified for 'vardump'");
+    skip_until(p, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  stmt = AstNode_New(NODE_VARDUMP);
+  stmt->value.symbol = symbol;
+
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of vardump statement");
+    skip_until(p, ';');
+  }
+#endif
+  return stmt;
+}
+
+/*
+goto_statement
+  : TK_GOTO identifier ';'
+  ;
+*/
+static node_t *goto_statement(parser_t *p)
+{
+  node_t *symnode = NULL;
+#if 0
+  Symbol *symbol = NULL;
+
+  assert_next_token(p, TK_GOTO);
+
+  if (!expect(p, TK_IDENTIFIER)) {
+    parse_error(p, "missing identifier after 'goto'");
+    skip_until(p, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symbol = SymbolTable_Add(
+      symbol_table(p),
+      token_name(p),
+      SYM_LABEL);
+
+  if (symbol == NULL) {
+    parse_error(p, "undefined variable specified for 'goto'");
+    skip_until(p, ';');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symnode = AstNode_New(NODE_SYMBOL);
+  symnode->value.symbol = symbol;
+
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of goto statement");
+    skip_until(p, ';');
+  }
+
+  return new_node(NODE_GOTO_STMT, symnode, NULL);
+#endif
+  return symnode;
+}
+
+/*
+labeled_statement
+  : TK_LABEL identifier ':' statement
+  ;
+*/
+static node_t *labeled_statement(parser_t *p)
+{
+  node_t *symnode = NULL;
+#if 0
+  Symbol *symbol = NULL;
+
+  assert_next_token(p, TK_LABEL);
+
+  if (!expect(p, TK_IDENTIFIER)) {
+    parse_error(p, "missing identifier after 'label'");
+    skip_until(p, ':');
+    return AstNode_New(NODE_NULL);
+  }
+
+  symbol = SymbolTable_Add(
+      symbol_table(p),
+      token_name(p),
+      SYM_LABEL);
+
+  symnode = AstNode_New(NODE_SYMBOL);
+  symnode->value.symbol = symbol;
+
+  if (!expect(p, ':')) {
+    parse_error(p, "missing ':' at the end of varialbe declaration");
+    skip_until(p, ';');
+  }
+
+  return new_node(NODE_LABELED_STMT, symnode, statement(p));
+#endif
+  return symnode;
+}
+
+/*
+variable_declaration
+  : "var" identifier ":" type_specifier initializer
+  ;
+*/
+static node_t *variable_declaration(parser_t *p)
+{
+  node_t *node = NULL;
+#if 0
+  node_t *init_expr = NULL;
+  Symbol *symbol = NULL;
+
+  if (!expect(p, TK_VAR)) {
+    return NULL;
+  }
+
+  if (!expect(p, TK_IDENTIFIER)) {
+    parse_error(p, "missing variable name after 'var'");
+    skip_until(p, ';');
+    return NULL;
+  }
+  symbol = new_symbol(p, SYM_VAR);
+
+  if (!expect(p, ':')) {
+    parse_error(p, "missing ':' after variable name");
+    skip_until(p, ';');
+    return NULL;
+  }
+
+  symbol->data_type = type_specifier(p);
+  if (symbol->data_type == TYPE_NONE) {
+    parse_error(p, "missing type name after ':'");
+    skip_until(p, ';');
+    return NULL;
+  }
+
+  if (peek_next_token(p) == '=') {
+    get_next_token(p); /* read '=' */
+    init_expr = expression(p);
+  }
+
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end");
+    return NULL;
+  }
+
+  node = AstNode_New(NODE_VAR_DECL);
+  node->value.symbol = symbol;
+  node->right = init_expr;
+#endif
+  return node;
+}
+
+/*
+variable_declaration_list
+  : variable_declaration 
+  | variable_declaration variable_declaration_list
+  ;
+*/
+static node_t *variable_declaration_list(parser_t *p)
+{
+  node_t *decl = variable_declaration(p);
+
+  if (decl == NULL) {
+    return NULL;
+  }
+
+  return list_node(decl, variable_declaration_list(p));
+}
+
+/*
+statement_list
+  : statement
+  | statement statement_list
+  ;
+*/
+static node_t *statement_list(parser_t *p)
+{
+  node_t *stmt = statement(p);
+  if (stmt == NULL) {
+    return NULL;
+  }
+  return list_node(stmt, statement_list(p));
+}
+
+/*
+block_statement
+  : '{' variable_declaration_list statement_list '}'
+  ;
+*/
+static node_t *block_statement(parser_t *p)
+{
+  node_t *block = NULL;
+#if 0
+  node_t *decl_list = NULL;
+  node_t *stmt_list = NULL;
+
+  if (!expect(p, '{')) {
+    parse_error(p, "missing '{'");
+    skip_until(p, ';');
+  }
+
+  decl_list = variable_declaration_list(p);
+  stmt_list = statement_list(p);
+
+  if (!expect(p, '}')) {
+    parse_error(p, "missing '}'");
+  }
+
+  block = AstNode_New(NODE_BLOCK);
+  block->left  = decl_list;
+  block->right = stmt_list;
+#endif
+  return block;
+}
+
+/*
+break_statement
+  : TK_BREAK ';'
+  ;
+*/
+static node_t *break_statement(parser_t *p)
+{
+  node_t *stmt = NULL;
+
+  assert_next(p, TK_BREAK);
+  stmt = new_node(AST_BREAK);
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of break statement");
+    skip_until(p, ';');
+  }
+  return stmt;
+}
+
+/*
+continue_statement
+  : TK_CONTINUE ';'
+  ;
+*/
+static node_t *continue_statement(parser_t *p)
+{
+  node_t *stmt = NULL;
+
+  assert_next(p, TK_CONTINUE);
+  stmt = new_node(AST_CONTINUE);
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of continue statement");
+    skip_until(p, ';');
+  }
+  return stmt;
+}
+
+/*
+return_statement
+  : TK_RETURN ';'
+  | TK_RETURN expression ';'
+  ;
+*/
+static node_t *return_statement(parser_t *p)
+{
+  node_t *stmt_return = NULL;
+
+  assert_next(p, TK_RETURN);
+  stmt_return = new_node(AST_RETURN);
+  if (expect(p, ';')) {
+    return stmt_return;
+  }
+#if 0
+  stmt_return->left = expression(p);
+
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of return statement");
+    skip_until(p, ';');
+  }
+#endif
+  return stmt_return;
+}
+
+/*
+if_statement
+  : TK_IF '(' expression ')' statement
+  | TK_IF '(' expression ')' statement TK_ELSE statement
+  ;
+*/
+static node_t *if_statement(parser_t *p)
+{
+#if 0
+  node_t *expr = NULL;
+  node_t *cond = NULL;
+  node_t *next = NULL;
+
+  assert_next_token(p, TK_IF);
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after 'if'");
+    skip_until(p, ')');
+  }
+
+  expr = expression(p);
+
+  if (!expect(p, ')')) {
+    parse_error(p, "missing ')' after conditional expression");
+    skip_until(p, '{');
+    put_back_token(p);
+  }
+
+  cond = new_node(NODE_COND, expr, statement(p));
+
+  if (expect(p, TK_ELSE)) {
+    next = statement(p);
+  }
+
+  return new_node(NODE_IF, cond, next);
+#endif
+  return NULL;
+}
+
+/*
+case_clause
+  : TK_CASE expression ':' statement
+  | TK_DEFAULT ':' statement
+  ;
+*/
+static node_t *case_clause(parser_t *p)
+{
+#if 0
+  NodeList list = LIST_INIT;
+  node_t *expr = NULL;
+
+  if (!expect(p, TK_CASE) && !expect(p, TK_DEFAULT)) {
+    /* TODO ABORT? */
+    return NULL;
+  }
+
+  if (token_tag(p) == TK_CASE) {
+    expr = expression(p);
+  }
+
+  if (!expect(p, ':')) {
+    parse_error(p, "missing ':' at the end of case tag");
+    skip_until(p, ';');
+  }
+
+  for (;;) {
+    node_t *stmt = NULL;
+    const int next = peek_next_token(p);
+
+    if (next == TK_CASE || next == TK_DEFAULT) {
+      break;
+    }
+
+    stmt = statement(p);
+    if (stmt == NULL) {
+      break;
+    }
+
+    append(&list, stmt);
+  }
+
+  return new_node(NODE_CASE_STMT, expr, list.head);
+#endif
+  return NULL;
+}
+
+/*
+case_clause_list
+  : case_clause case_clause_list
+  ;
+*/
+static node_t *case_clause_list(parser_t *p)
+{
+#if 0
+  NodeList list = LIST_INIT;
+
+  for (;;) {
+    const int next = peek_next_token(p);
+
+    if (next != TK_CASE && next != TK_DEFAULT) {
+      break;
+    }
+
+    append(&list, case_clause(p));
+  }
+
+  return list.head;
+#endif
+  return NULL;
+}
+
+/*
+switch_statement
+  : TK_SWITCH '(' expression ')' '{' case_clause_list '}'
+  ;
+*/
+static node_t *switch_statement(parser_t *p)
+{
+#if 0
+  node_t *expr = NULL;
+  node_t *case_list = NULL;
+
+  assert_next_token(p, TK_SWITCH);
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after 'if'");
+    skip_until(p, ')');
+  }
+
+  expr = expression(p);
+
+  if (!expect(p, ')')) {
+    parse_error(p, "missing ')' after conditional expression");
+    skip_until(p, '{');
+    put_back_token(p);
+  }
+
+  if (!expect(p, '{')) {
+    parse_error(p, "missing '{' after 'switch' condition");
+    skip_until(p, ';');
+  }
+
+  case_list = case_clause_list(p);
+
+  if (!expect(p, '}')) {
+    parse_error(p, "missing '}' after 'switch' case clauses");
+    skip_until(p, ';');
+  }
+
+  return new_node(NODE_SWITCH, expr, case_list);
+#endif
+  return NULL;
+}
+
+/*
+for_statement
+  : TK_FOR '(' expression ';' expression ';' expression ')' statement
+  ;
+*/
+static node_t *for_statement(parser_t *p)
+{
+#if 0
+  node_t *init = NULL;
+  node_t *cond = NULL;
+  node_t *expr = NULL;
+  node_t *loop = NULL;
+  node_t *iter = NULL;
+
+  assert_next_token(p, TK_FOR);
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after 'for'");
+    skip_until(p, ')');
+  }
+
+  if (!expect(p, ';')) {
+    init = expression(p);
+    if (!expect(p, ';')) {
+      parse_error(p, "missing ';' after the first 'for' expression");
+      skip_until(p, ')');
+    }
+  }
+
+  if (!expect(p, ';')) {
+    expr = expression(p);
+    if (!expect(p, ';')) {
+      parse_error(p, "missing ';' after the second 'for' expression");
+      skip_until(p, ')');
+    }
+  }
+
+  if (!expect(p, ')')) {
+    iter = expression(p);
+    if (!expect(p, ')')) {
+      parse_error(p, "missing ')' after the third 'for' expression");
+      skip_until(p, '{');
+      put_back_token(p);
+    }
+  }
+
+  loop = new_node(NODE_FOR_LOOP, iter, statement(p));
+  cond = new_node(NODE_FOR_COND, expr, loop);
+
+  return new_node(NODE_FOR_INIT, init, cond);
+#endif
+  return NULL;
+}
+
+/*
+while_statement
+  : TK_WHILE '(' expression ')' statement
+  ;
+*/
+static node_t *while_statement(parser_t *p)
+{
+#if 0
+  node_t *expr = NULL;
+  node_t *stmt = NULL;
+
+  assert_next_token(p, TK_WHILE);
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after 'while'");
+    skip_until(p, ')');
+  }
+
+  expr = expression(p);
+
+  if (!expect(p, ')')) {
+    parse_error(p, "missing ')' after conditional expression");
+    skip_until(p, '{');
+    put_back_token(p);
+  }
+
+  stmt = statement(p);
+
+  return new_node(NODE_WHILE, expr, stmt);
+#endif
+  return NULL;
+}
+
+/*
+do_while_statement
+  : TK_DO statement '(' expression ')' TK_WHILE
+  ;
+*/
+static node_t *do_while_statement(parser_t *p)
+{
+#if 0
+  node_t *expr = NULL;
+  node_t *stmt = NULL;
+
+  assert_next_token(p, TK_DO);
+
+  stmt = statement(p);
+
+  if (!expect(p, TK_WHILE)) {
+    parse_error(p, "missing 'while' after statements");
+    skip_until(p, ';');
+    put_back_token(p);
+  }
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after 'do'");
+    skip_until(p, ')');
+  }
+
+  expr = expression(p);
+
+  if (!expect(p, ')')) {
+    parse_error(p, "missing ')' after conditional expression");
+    skip_until(p, ';');
+    put_back_token(p);
+  }
+
+  if (!expect(p, ';')) {
+    parse_error(p, "missing ';' at the end of 'do while' statement");
+    skip_until(p, ';');
+  }
+
+  return new_node(NODE_DO_WHILE, stmt, expr);
+#endif
+  return NULL;
+}
+
+/*
+jump_statement
+  : TK_BREAK ';'
+  | TK_CONTINUE ';'
+  | TK_RETURN ';'
+  ;
+*/
+static node_t *jump_statement(parser_t *p)
+{
+  switch (peek_token(p)) {
+  case TK_BREAK:
+    return break_statement(p);
+  case TK_CONTINUE:
+    return continue_statement(p);
+  case TK_RETURN:
+    return return_statement(p);
+  default:
+    return NULL;
+  }
+}
+
+/*
+statement
+  : assignment_or_function_call
+  | return_statement
+  | vardump_statement
+  | jump_statement
+  ;
+*/
+static node_t *statement(parser_t *p)
+{
+  node_t *stmt = NULL;
+
+  switch (peek_token(p)) {
+
+  /* selection statements */
+  case TK_IF:
+    stmt = if_statement(p);
+    break;
+  case TK_SWITCH:
+    stmt = switch_statement(p);
+    break;
+
+  /* iteration statements */
+  case TK_FOR:
+    stmt = for_statement(p);
+    break;
+  case TK_WHILE:
+    stmt = while_statement(p);
+    break;
+  case TK_DO:
+    stmt = do_while_statement(p);
+    break;
+
+  case TK_BREAK:
+  case TK_CONTINUE:
+  case TK_RETURN:
+    return jump_statement(p);
+
+#if 0
+    stmt = goto_statement(p);
+    break;
+
+  /* builtin operators */
+  case TK_VARDUMP:
+    stmt = vardump_statement(p);
+    break;
+
+  /* labeled statements */
+  case TK_LABEL:
+    stmt = labeled_statement(p);
+    break;
+#endif
+
+  /*
+  case TK_IDENTIFIER:
+    stmt = assignment_or_function_call(p);
+    break;
+  */
+  case TK_IDENTIFIER:
+  case TK_INC:
+  case TK_DEC:
+    stmt = expression_statement(p);
+    break;
+
+  case ';':
+    stmt = null_statement(p);
+    break;
+
+  case '{':
+    stmt = block_statement(p);
+    break;
+
+  default:
+    return NULL;
+  }
+
+  return stmt;
+}
+
+/*
+function_body
+  : '{' variable_declaration_list statement_list '}'
+  ;
+*/
+/* TODO should use block_statement? */
+static node_t *function_body(parser_t *p)
+{
+  return block_statement(p);
+}
+
+/*
+function_parameters
+  : '(' parameter_list ')'
+  ;
+*/
+static node_t *function_parameters(parser_t *p)
+{
+  node_t *param_list = NULL;
+
+  if (!expect(p, '(')) {
+    parse_error(p, "missing '(' after return type");
+    skip_until(p, ')');
+    return NULL;
+  }
+
+  if (!expect(p, ')')) {
+    parse_error(p, "missing ')' after parameter list");
+    skip_until(p, ')');
+    return NULL;
+  }
+
+  return param_list;
+}
+
+/*
+function_definition
+  : TK_FUNCTION TK_IDENTIFIER ':' type_specifier function_parameters function_body
+  ;
+*/
+static node_t *function_definition(parser_t *p)
+{
+#if 0
+  node_t *func_def = NULL;
+  Symbol *symbol = NULL;
+
+  assert_next_token(p, TK_FUNCTION);
+
+  if (!expect(p, TK_IDENTIFIER)) {
+    parse_error(p, "missing function name after 'function'");
+    skip_until(p, ':');
+    put_back_token(p); /* put back ':' for function_parameters */
+  }
+
+  symbol = SymbolTable_Add(
+      symbol_table(p),
+      token_name(p),
+      SYM_FUNCTION);
+
+  if (symbol == NULL) {
+    parse_error(p, "function already defined");
+    return NULL;
+  }
+
+  if (!expect(p, ':')) {
+    parse_error(p, "missing ':' after function name");
+    skip_until(p, '(');
+    return NULL;
+  }
+
+  symbol->data_type = type_specifier(p);
+
+  func_def = AstNode_New(NODE_FUNC_DEF);
+  func_def->left  = function_parameters(p);
+  func_def->right = function_body(p);
+  func_def->value.symbol = symbol;
+
+  return func_def;
+#endif
+  return NULL;
+}
+
+/* TODO ----------------------------------------------------------------- */
+
+#if 0
 /*
 variable_declaration
   : TK_VAR identifier type ';'
@@ -181,80 +1482,7 @@ static node_t *variable_declaration(parser_t *p)
 
   return ast_var_decl(expr);
 }
-
-/*
-expression_statement
-  : ';'
-  | expression ';'
-  ;
-*/
-static node_t *expression_statement(parser_t *p)
-{
-  node_t *expr = expression(p);
-
-  if (!expect(p, ';')) {
-  }
-  /*
-  const token_t *tok = get_token(p);
-  if (kind_of(tok) != ';') {
-    fprintf(stderr,"syerror, expected ';' but got '%s'.\n", kind_to_string(tok->kind));
-  }
-  */
-
-#if 0
-  if (!expect(p, ';')) {
-    /* TODO
-    parse_error(p, "missing ';' at the end of expression statement");
-    skip_until(p, ';');
-    */
-  }
 #endif
-
-  return expr;
-}
-
-/*
-statement
-  : variable_declaration
-  | expression_statement
-  | ...
-  ;
-*/
-static node_t *statement(parser_t *p)
-{
-  const token_t *tok = get_token(p);
-
-  switch (kind_of(tok)) {
-
-  case TK_VAR:
-    unget_token(p);
-    return variable_declaration(p);
-
-  case TK_IDENTIFIER:
-    unget_token(p);
-    return expression_statement(p);
-
-  default:
-    unget_token(p);
-    return expression_statement(p);
-  }
-  return NULL;
-}
-
-/*
-statement_list
-  : statement
-  | statement statement_list
-  ;
-*/
-static node_t *statement_list(parser_t *p)
-{
-  node_t *stmt = statement(p);
-  if (stmt == NULL) {
-    return NULL;
-  }
-  return list_node(stmt, statement_list(p));
-}
 
 /*
 program
@@ -268,8 +1496,14 @@ static node_t *program(parser_t *p)
 
 int parse_file(struct parser *p, const char *filename)
 {
+  const node_t *node = NULL;
+
   lex_input_file(&p->lex, filename);
-  program(p);
+  node = program(p);
+
+  printf("PARSING DONE\n\n");
+  ast_print_tree(node);
+
   return 0;
 }
 
@@ -280,7 +1514,7 @@ void parse_finish(struct parser *p)
 
 /* oldsrc */
 #if 0
-#include "parser.h"
+#include "p.h"
 #include "datatype.h"
 #include "memory.h"
 #include "symbol.h"
@@ -290,20 +1524,16 @@ void parse_finish(struct parser *p)
 #include <stdarg.h>
 #include <string.h>
 
-typedef struct Parser Parser;
+typedef struct parser_t parser_t;
 typedef struct Symbol Symbol;
-typedef struct AstNode Node;
+typedef struct AstNode node_t;
 typedef struct Token Token;
-
-static Node *program(Parser *parser);
-static Node *expression(Parser *parser);
-static Node *statement(Parser *parser);
 
 typedef struct ErrorInfo ErrorInfo;
 enum { TOKEN_BUF_SIZE = 2 };
 enum { MAX_ERROR_INFO = 5 };
 
-struct Parser {
+struct parser_t {
   struct Lexer *lexer;
   struct SymbolTable *table;
 
@@ -316,13 +1546,13 @@ struct Parser {
   int error_count;
 };
 
-struct Parser *Parser_New(void)
+struct parser_t *Parser_New(void)
 {
-  struct Parser *parser = NULL;
+  struct parser_t *p = NULL;
   struct Lexer *lexer = NULL;
 
-  parser = MEMORY_ALLOC(struct Parser);
-  if (parser == NULL) {
+  p = MEMORY_ALLOC(struct parser_t);
+  if (p == NULL) {
     /* TODO error handling */
     return NULL;
   }
@@ -333,1393 +1563,63 @@ struct Parser *Parser_New(void)
     return NULL;
   }
 
-  parser->lexer = lexer;
+  p->lexer = lexer;
 
-  parser->is_head_token = 1;
-  parser->curr_token_index = 0;
+  p->is_head_token = 1;
+  p->curr_token_index = 0;
 
-  parser->error_count = 0;
+  p->error_count = 0;
 
-  return parser;
+  return p;
 }
 
-void Parser_Free(struct Parser *parser)
+void Parser_Free(struct parser_t *p)
 {
-  if (parser == NULL) {
+  if (p == NULL) {
     return;
   }
-  Lexer_Free(parser->lexer);
-  MEMORY_FREE(parser);
+  Lexer_Free(p->lexer);
+  MEMORY_FREE(p);
 }
 
-struct AstNode *Parser_ParseFile(struct Parser *parser,
+struct AstNode *Parser_ParseFile(struct parser_t *p,
     FILE *input_file, struct SymbolTable *table)
 {
-  Lexer_SetInputFile(parser->lexer, input_file);
-  parser->table = table;
+  Lexer_SetInputFile(p->lexer, input_file);
+  p->table = table;
 
-  return program(parser);
+  return program(p);
 }
 
-struct AstNode *Parser_ParseString(struct Parser *parser,
+struct AstNode *Parser_ParseString(struct parser_t *p,
     const char *input_string, struct SymbolTable *table)
 {
-  Lexer_SetInputString(parser->lexer, input_string);
-  parser->table = table;
+  Lexer_SetInputString(p->lexer, input_string);
+  p->table = table;
 
-  return program(parser);
+  return program(p);
 }
 
-int Parser_GetErrorCount(const struct Parser *parser)
+int Parser_GetErrorCount(const struct parser_t *p)
 {
-  return parser->error_count;
+  return p->error_count;
 }
 
-int Parser_GetMaxErrorInfo(const struct Parser *parser)
+int Parser_GetMaxErrorInfo(const struct parser_t *p)
 {
   return MAX_ERROR_INFO;
 }
 
-const struct ErrorInfo *Parser_GetErrorInfo(struct Parser *parser, int index)
+const struct ErrorInfo *Parser_GetErrorInfo(struct parser_t *p, int index)
 {
-  if (Parser_GetErrorCount(parser) == 0) {
+  if (Parser_GetErrorCount(p) == 0) {
     return NULL;
   }
-  if (index > Parser_GetMaxErrorInfo(parser)) {
-    return NULL;
-  }
-
-  return &parser->errors[index];
-}
-
-static void put_back_token(Parser *parser)
-{
-  parser->curr_token_index =
-      (parser->curr_token_index + TOKEN_BUF_SIZE - 1) % TOKEN_BUF_SIZE;
-  parser->is_head_token = 0;
-}
-
-static void parse_error(Parser *parser, const char *detail)
-{
-  ErrorInfo *info = NULL;
-
-  if (parser->error_count >= Parser_GetMaxErrorInfo(parser)) {
-    parser->error_count++;
-    return;
-  }
-
-  info = &parser->errors[parser->error_count];
-  info->line_number = Lexer_GetLineNumber(parser->lexer);
-  info->detail = detail;
-
-  parser->error_count++;
-}
-
-/* -------------------------------------------------------------------------- */
-static struct SymbolTable *symbol_table(const Parser *parser)
-{
-  return parser->table;
-}
-
-static const Token *get_current_token(const Parser *parser)
-{
-  return &parser->token_buf[parser->curr_token_index];
-}
-
-static int token_tag(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->tag;
-}
-
-static DataType token_data_type(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->data_type;
-}
-
-static const char *token_name(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->value.name;
-}
-
-static double token_integer_value(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->value.Integer;
-}
-
-static double token_float_value(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->value.Float;
-}
-
-static const char *token_string(const Parser *parser) {
-  const Token *token = get_current_token(parser);
-  return token->value.string;
-}
-
-static int get_next_token(Parser *parser)
-{
-  for (;;) {
-    Token *token = NULL;
-    parser->curr_token_index = (parser->curr_token_index + 1) % TOKEN_BUF_SIZE;
-    token = &parser->token_buf[parser->curr_token_index];
-
-    if (parser->is_head_token) {
-      Lexer_NextToken(parser->lexer, token);
-    }
-    parser->is_head_token = 1;
-
-#if 0
-    switch (token_tag(parser)) {
-    /*
-    case TK_COMMENT:
-      continue;
-    */
-    default:
-      break;
-    }
-#endif
-
-    break;
-  }
-
-  return token_tag(parser);
-}
-
-static void skip_until(Parser *parser, int until_tag)
-{
-  while (get_next_token(parser) != until_tag) {
-    /* do nothing */
-  }
-}
-
-static int expect(Parser *parser, int expected_token_tag)
-{
-  if (get_next_token(parser) == expected_token_tag) {
-    return 1;
-  } else {
-    put_back_token(parser);
-    return 0;
-  }
-}
-
-static int peek_next_token(Parser *parser)
-{
-  const int tag = get_next_token(parser);
-  put_back_token(parser);
-  return tag;
-}
-
-static int assert_next_token(Parser *parser, int expected_token_tag)
-{
-  if (get_next_token(parser) != expected_token_tag) {
-    fprintf(stderr, "compiler implementation error\n");
-    abort();
-  }
-  return token_tag(parser);
-}
-
-static Node *new_node(int op, Node *lhs, Node *rhs)
-{
-  Node *node = AstNode_New(op);
-  node->left  = lhs;
-  node->right = rhs;
-  return node;
-}
-
-static Node *list_node(Node *current, Node *next)
-{ /* TODO do we need this? */
-  return new_node(NODE_LIST, current, next);
-}
-
-static Symbol *new_symbol(Parser *parser, int symbol_type)
-{
-  Symbol *symbol = SymbolTable_Add(
-      symbol_table(parser),
-      token_name(parser),
-      symbol_type);
-
-  if (symbol == NULL) {
+  if (index > Parser_GetMaxErrorInfo(p)) {
     return NULL;
   }
 
-  return symbol;
+  return &p->errors[index];
 }
 
-/* TODO TEST */
-typedef struct NodeList {
-  Node *head;
-  Node *tail;
-} NodeList;
-#define LIST_INIT {NULL, NULL}
-
-static Node *append(NodeList *list, Node *node)
-{
-  if (node == NULL) {
-    return NULL;
-  }
-
-  if (list->tail == NULL) {
-    list->tail = list_node(node, NULL);
-    list->head = list->tail;
-  } else {
-    list->tail->right = list_node(node, NULL);
-    list->tail = list->tail->right;
-  }
-  return node;
-}
-
-static DataType type_specifier(Parser *parser)
-{
-  DataType data_type = TYPE_NONE;
-
-  get_next_token(parser);
-  data_type = token_data_type(parser);
-
-  if (data_type == TYPE_NONE) {
-    put_back_token(parser);
-    return TYPE_NONE;
-  }
-
-  return data_type;
-}
-
-/*
-argument_expression_list
-  ;
-*/
-static Node *argument_expression_list(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *node = NULL;
-
-  switch (peek_next_token(parser)) {
-
-  case TK_STRING_LITERAL:
-    get_next_token(parser);
-    symbol = SymbolTable_Add(
-        symbol_table(parser),
-        token_string(parser),
-        SYM_STRING_LITERAL);
-    node = AstNode_New(NODE_STRING_LITERAL);
-    node->value.symbol = symbol;
-    break;
-
-  default:
-    break;
-  }
-
-  return node;
-}
-
-/*
-primary_expression
-  : TK_INT_LITERAL
-  | TK_FLOAT_LITERAL
-  | TK_IDENTIFIER
-  | '(' expression ')'
-  ;
-*/
-static Node *primary_expression(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *node = NULL;
-
-  switch (get_next_token(parser)) {
-
-  case TK_INT_LITERAL:
-    node = AstNode_New(NODE_INT_LITERAL);
-    node->value.Integer = token_integer_value(parser);
-    node->data_type = token_data_type(parser);
-    break;
-
-  case TK_FLOAT_LITERAL:
-    node = AstNode_New(NODE_FLOAT_LITERAL);
-    node->value.Float = token_float_value(parser);
-    node->data_type = token_data_type(parser);
-    break;
-
-  case TK_IDENTIFIER:
-    {
-      /* TODO TMP */
-      if (strcmp(token_name(parser), "print") == 0) {
-        symbol = SymbolTable_Add(
-            symbol_table(parser),
-            token_name(parser),
-            SYM_FUNCTION);
-      }
-    }
-    symbol = SymbolTable_Lookup(
-        symbol_table(parser),
-        token_name(parser));
-    if (symbol == NULL) {
-      /* TODO error handling */
-    }
-    node = AstNode_New(NODE_SYMBOL);
-    node->value.symbol = symbol;
-    break;
-
-  case '(':
-    node = expression(parser);
-    if (!expect(parser, ')')) {
-      parse_error(parser, "missing ')' in expression"/*, token_string(parser)*/);
-    }
-    break;
-
-  default:
-    parse_error(parser, "unexpected token");
-    put_back_token(parser);
-    node = AstNode_New(NODE_NULL);
-    break;
-  }
-
-  return node;
-}
-
-/*
-postfix_expression
-  : primary_expression
-  | postfix_expression TK_INC
-  | postfix_expression TK_DEC
-  | postfix_expression '(' argument_expression_list ')'
-  ;
-*/
-static Node *postfix_expression(Parser *parser)
-{
-  Node *root = primary_expression(parser);
-
-  if (expect(parser, TK_INC) || expect(parser, TK_DEC)) {
-    const int new_op = token_tag(parser) == TK_INC ? NODE_POST_INC : NODE_POST_DEC;
-    root = new_node(new_op, root, NULL);
-  }
-  /* TODO TEST */
-  else if (expect(parser, '(')) {
-    Node *args = argument_expression_list(parser);
-
-    if (!expect(parser, ')')) {
-      parse_error(parser, "missing ')' at the end of function call");
-      skip_until(parser, ';');
-    }
-
-    root = new_node(NODE_CALL_EXPR, root, args);
-  }
-
-  return root;
-}
-
-/*
-unary_expression
-  : postfix_expression
-  | TK_INC unary_expression
-  | TK_DEC unary_expression
-  ;
-*/
-static Node *unary_expression(Parser *parser)
-{
-  Node *root = NULL;
-
-  if (expect(parser, TK_INC) || expect(parser, TK_DEC)) {
-    const int new_op = token_tag(parser) == TK_INC ? NODE_INC : NODE_DEC;
-    root = new_node(new_op, root, unary_expression(parser));
-  } else {
-    root = postfix_expression(parser);
-  }
-
-  return root;
-}
-
-/*
-multiplicative_expression
-  : unary_expression
-  | multiplicative_expression '*' unary_expression
-  | multiplicative_expression '/' unary_expression
-  ;
-*/
-static Node *multiplicative_expression(Parser *parser)
-{
-  Node *root = unary_expression(parser);
-
-  while (expect(parser, '*') || expect(parser, '/') || expect(parser, '%')) {
-    int new_op = NODE_NULL;
-    switch (token_tag(parser)) {
-    case '*': new_op = NODE_MUL; break;
-    case '/': new_op = NODE_DIV; break;
-    case '%': new_op = NODE_MOD; break;
-    }
-    root = new_node(new_op, root, unary_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-additive_expression
-  : multiplicative_expression
-  | additive_expression '+' multiplicative_expression
-  | additive_expression '-' multiplicative_expression
-  ;
-*/
-static Node *additive_expression(Parser *parser)
-{
-  Node *root = multiplicative_expression(parser);
-
-  while (expect(parser, '+') || expect(parser, '-')) {
-    const int new_op = token_tag(parser) == '+' ? NODE_ADD : NODE_SUB;
-    root = new_node(new_op, root, multiplicative_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-shift_expression
-  : additive_expression
-  | shift_expression TK_LSHIFT additive_expression
-  | shift_expression TK_RSHIFT additive_expression
-  ;
-*/
-static Node *shift_expression(Parser *parser)
-{
-  Node *root = additive_expression(parser);
-
-  while (expect(parser, TK_LSHIFT) || expect(parser, TK_RSHIFT)) {
-    const int new_op = token_tag(parser) == TK_LSHIFT ? NODE_LSHIFT : NODE_RSHIFT;
-    root = new_node(new_op, root, additive_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-relational_expression
-  : shift_expression
-  | relational_expression '<' shift_expression
-  | relational_expression '>' shift_expression
-  | relational_expression TK_LE shift_expression
-  | relational_expression TK_GE shift_expression
-  ;
-*/
-static Node *relational_expression(Parser *parser)
-{
-  Node *root = shift_expression(parser);
-
-  while (expect(parser, '<')   ||
-         expect(parser, '>')   ||
-         expect(parser, TK_LE) ||
-         expect(parser, TK_GE)) {
-    int new_op = NODE_NULL;
-    switch (token_tag(parser)) {
-    case '<':   new_op = NODE_LT; break;
-    case '>':   new_op = NODE_GT; break;
-    case TK_LE: new_op = NODE_LE; break;
-    case TK_GE: new_op = NODE_GE; break;
-    }
-    root = new_node(new_op, root, shift_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-equality_expression
-  : relational_expression
-  | equality_expression TK_EQ relational_expression
-  | equality_expression TK_NE relational_expression
-  ;
-*/
-static Node *equality_expression(Parser *parser)
-{
-  Node *root = relational_expression(parser);
-
-  while (expect(parser, TK_EQ) || expect(parser, TK_NE)) {
-    const int new_op = token_tag(parser) == TK_EQ ? NODE_EQ : NODE_NE;
-    root = new_node(new_op, root, relational_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-bitwise_and_expression
-  : equality_expression
-  | bitwise_and_expression '&' equality_expression
-  ;
-*/
-static Node *bitwise_and_expression(Parser *parser)
-{
-  Node *root = equality_expression(parser);
-
-  while (expect(parser, '&')) {
-    root = new_node(NODE_BITWISE_AND, root, equality_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-bitwise_xor_expression
-  : bitwise_and_expression
-  | bitwise_xor_expression '^' bitwise_and_expression
-  ;
-*/
-static Node *bitwise_xor_expression(Parser *parser)
-{
-  Node *root = bitwise_and_expression(parser);
-
-  while (expect(parser, '^')) {
-    root = new_node(NODE_BITWISE_XOR, root, bitwise_and_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-bitwise_or_expression
-  : bitwise_xor_expression
-  | bitwise_or_expression '|' bitwise_xor_expression
-  ;
-*/
-static Node *bitwise_or_expression(Parser *parser)
-{
-  Node *root = bitwise_xor_expression(parser);
-
-  while (expect(parser, '|')) {
-    root = new_node(NODE_BITWISE_OR, root, bitwise_xor_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-logical_and_expression
-  : bitwise_or_expression
-  | logical_and_expression TK_AND bitwise_or_expression
-  ;
-*/
-static Node *logical_and_expression(Parser *parser)
-{
-  Node *root = bitwise_or_expression(parser);
-
-  while (expect(parser, TK_AND)) {
-    root = new_node(NODE_AND, root, bitwise_or_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-logical_or_expression
-  : logical_and_expression
-  | logical_or_expression TK_OR logical_and_expression
-  ;
-*/
-static Node *logical_or_expression(Parser *parser)
-{
-  Node *root = logical_and_expression(parser);
-
-  while (expect(parser, TK_OR)) {
-    root = new_node(NODE_OR, root, logical_and_expression(parser));
-  }
-
-  return root;
-}
-
-/*
-assignment_expression
-  : conditional_expression
-  | unary_expression '=' assignment_expression
-  ;
-*/
-static Node *assignment_expression(Parser *parser)
-{
-  Node *lval = logical_or_expression(parser);
-
-  if (expect(parser, '=')) {
-    return new_node(NODE_ASSIGN, lval, expression(parser));
-  }
-
-  return lval;
-}
-
-/*
-expression
-  : logical_or_expression
-  ;
-*/
-static Node *expression(Parser *parser)
-{
-  Node *node = assignment_expression(parser);
-  return node;
-}
-
-/*
-expression_statement
-  : ';'
-  | expression ';'
-  ;
-*/
-static Node *expression_statement(Parser *parser)
-{
-  Node *expr = expression(parser);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of expression statement");
-    skip_until(parser, ';');
-  }
-
-  return new_node(NODE_EXPR_STMT, expr, NULL);
-}
-
-/*
-null_statement
-  : ';'
-  ;
-*/
-static Node *null_statement(Parser *parser)
-{
-  assert_next_token(parser, ';');
-  return AstNode_New(NODE_NULL_STMT);
-}
-
-/*
-return_statement
-  : TK_RETURN ';'
-  | TK_RETURN expression ';'
-  ;
-*/
-static Node *return_statement(Parser *parser)
-{
-  Node *stmt_return = NULL;
-
-  assert_next_token(parser, TK_RETURN);
-
-  stmt_return = new_node(NODE_RETURN_STMT, NULL, NULL);
-
-  if (expect(parser, ';')) {
-    return stmt_return;
-  }
-
-  stmt_return->left = expression(parser);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of return statement");
-    skip_until(parser, ';');
-  }
-
-  return stmt_return;
-}
-
-/*
-vardump_statement
-  : "vardump" identifier
-  ;
-*/
-static Node *vardump_statement(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *stmt = NULL;
-
-  assert_next_token(parser, TK_VARDUMP);
-
-  if (!expect(parser, TK_IDENTIFIER)) {
-    parse_error(parser, "missing identifier after 'vardump'");
-    skip_until(parser, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  symbol = SymbolTable_Lookup(
-      symbol_table(parser),
-      token_name(parser));
-
-  if (symbol == NULL) {
-    parse_error(parser, "undefined variable specified for 'vardump'");
-    skip_until(parser, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  stmt = AstNode_New(NODE_VARDUMP);
-  stmt->value.symbol = symbol;
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of vardump statement");
-    skip_until(parser, ';');
-  }
-
-  return stmt;
-}
-
-/*
-goto_statement
-  : TK_GOTO identifier ';'
-  ;
-*/
-static Node *goto_statement(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *symnode = NULL;
-
-  assert_next_token(parser, TK_GOTO);
-
-  if (!expect(parser, TK_IDENTIFIER)) {
-    parse_error(parser, "missing identifier after 'goto'");
-    skip_until(parser, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  symbol = SymbolTable_Add(
-      symbol_table(parser),
-      token_name(parser),
-      SYM_LABEL);
-
-  if (symbol == NULL) {
-    parse_error(parser, "undefined variable specified for 'goto'");
-    skip_until(parser, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  symnode = AstNode_New(NODE_SYMBOL);
-  symnode->value.symbol = symbol;
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of goto statement");
-    skip_until(parser, ';');
-  }
-
-  return new_node(NODE_GOTO_STMT, symnode, NULL);
-}
-
-/*
-labeled_statement
-  : TK_LABEL identifier ':' statement
-  ;
-*/
-static Node *labeled_statement(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *symnode = NULL;
-
-  assert_next_token(parser, TK_LABEL);
-
-  if (!expect(parser, TK_IDENTIFIER)) {
-    parse_error(parser, "missing identifier after 'label'");
-    skip_until(parser, ':');
-    return AstNode_New(NODE_NULL);
-  }
-
-  symbol = SymbolTable_Add(
-      symbol_table(parser),
-      token_name(parser),
-      SYM_LABEL);
-
-  symnode = AstNode_New(NODE_SYMBOL);
-  symnode->value.symbol = symbol;
-
-  if (!expect(parser, ':')) {
-    parse_error(parser, "missing ':' at the end of varialbe declaration");
-    skip_until(parser, ';');
-  }
-
-  return new_node(NODE_LABELED_STMT, symnode, statement(parser));
-}
-
-/*
-variable_declaration
-  : "var" identifier ":" type_specifier initializer
-  ;
-*/
-static Node *variable_declaration(Parser *parser)
-{
-  Symbol *symbol = NULL;
-  Node *init_expr = NULL;
-  Node *node = NULL;
-
-  if (!expect(parser, TK_VAR)) {
-    return NULL;
-  }
-
-  if (!expect(parser, TK_IDENTIFIER)) {
-    parse_error(parser, "missing variable name after 'var'");
-    skip_until(parser, ';');
-    return NULL;
-  }
-  symbol = new_symbol(parser, SYM_VAR);
-
-  if (!expect(parser, ':')) {
-    parse_error(parser, "missing ':' after variable name");
-    skip_until(parser, ';');
-    return NULL;
-  }
-
-  symbol->data_type = type_specifier(parser);
-  if (symbol->data_type == TYPE_NONE) {
-    parse_error(parser, "missing type name after ':'");
-    skip_until(parser, ';');
-    return NULL;
-  }
-
-  if (peek_next_token(parser) == '=') {
-    get_next_token(parser); /* read '=' */
-    init_expr = expression(parser);
-  }
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end");
-    return NULL;
-  }
-
-  node = AstNode_New(NODE_VAR_DECL);
-  node->value.symbol = symbol;
-  node->right = init_expr;
-
-  return node;
-}
-
-/*
-variable_declaration_list
-  : variable_declaration 
-  | variable_declaration variable_declaration_list
-  ;
-*/
-static Node *variable_declaration_list(Parser *parser)
-{
-  Node *decl = variable_declaration(parser);
-
-  if (decl == NULL) {
-    return NULL;
-  }
-
-  return list_node(decl, variable_declaration_list(parser));
-}
-
-/*
-statement_list
-  : statement
-  | statement statement_list
-  ;
-*/
-static Node *statement_list(Parser *parser)
-{
-  Node *stmt = statement(parser);
-
-  if (stmt == NULL) {
-    return NULL;
-  }
-
-  return list_node(stmt, statement_list(parser));
-}
-
-/*
-block_statement
-  : '{' variable_declaration_list statement_list '}'
-  ;
-*/
-static Node *block_statement(Parser *parser)
-{
-  Node *decl_list = NULL;
-  Node *stmt_list = NULL;
-  Node *block = NULL;
-
-  if (!expect(parser, '{')) {
-    parse_error(parser, "missing '{'");
-    skip_until(parser, ';');
-  }
-
-  decl_list = variable_declaration_list(parser);
-  stmt_list = statement_list(parser);
-
-  if (!expect(parser, '}')) {
-    parse_error(parser, "missing '}'");
-  }
-
-  block = AstNode_New(NODE_BLOCK);
-  block->left  = decl_list;
-  block->right = stmt_list;
-  return block;
-}
-
-/*
-break_statement
-  : TK_BREAK ';'
-  ;
-*/
-static Node *break_statement(Parser *parser)
-{
-  Node *stmt = NULL;
-
-  assert_next_token(parser, TK_BREAK);
-
-  stmt = new_node(NODE_BREAK_STMT, NULL, NULL);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of break statement");
-    skip_until(parser, ';');
-  }
-
-  return stmt;
-}
-
-/*
-continue_statement
-  : TK_CONTINUE ';'
-  ;
-*/
-static Node *continue_statement(Parser *parser)
-{
-  Node *stmt = NULL;
-
-  assert_next_token(parser, TK_CONTINUE);
-
-  stmt = new_node(NODE_CONTINUE_STMT, NULL, NULL);
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of continue statement");
-    skip_until(parser, ';');
-  }
-
-  return stmt;
-}
-
-/*
-if_statement
-  : TK_IF '(' expression ')' statement
-  | TK_IF '(' expression ')' statement TK_ELSE statement
-  ;
-*/
-static Node *if_statement(Parser *parser)
-{
-  Node *expr = NULL;
-  Node *cond = NULL;
-  Node *next = NULL;
-
-  assert_next_token(parser, TK_IF);
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'if'");
-    skip_until(parser, ')');
-  }
-
-  expr = expression(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after conditional expression");
-    skip_until(parser, '{');
-    put_back_token(parser);
-  }
-
-  cond = new_node(NODE_COND, expr, statement(parser));
-
-  if (expect(parser, TK_ELSE)) {
-    next = statement(parser);
-  }
-
-  return new_node(NODE_IF, cond, next);
-}
-
-/*
-case_clause
-  : TK_CASE expression ':' statement
-  | TK_DEFAULT ':' statement
-  ;
-*/
-static Node *case_clause(Parser *parser)
-{
-  NodeList list = LIST_INIT;
-  Node *expr = NULL;
-
-  if (!expect(parser, TK_CASE) && !expect(parser, TK_DEFAULT)) {
-    /* TODO ABORT? */
-    return NULL;
-  }
-
-  if (token_tag(parser) == TK_CASE) {
-    expr = expression(parser);
-  }
-
-  if (!expect(parser, ':')) {
-    parse_error(parser, "missing ':' at the end of case tag");
-    skip_until(parser, ';');
-  }
-
-  for (;;) {
-    Node *stmt = NULL;
-    const int next = peek_next_token(parser);
-
-    if (next == TK_CASE || next == TK_DEFAULT) {
-      break;
-    }
-
-    stmt = statement(parser);
-    if (stmt == NULL) {
-      break;
-    }
-
-    append(&list, stmt);
-  }
-
-  return new_node(NODE_CASE_STMT, expr, list.head);
-
-}
-
-/*
-case_clause_list
-  : case_clause case_clause_list
-  ;
-*/
-static Node *case_clause_list(Parser *parser)
-{
-  NodeList list = LIST_INIT;
-
-  for (;;) {
-    const int next = peek_next_token(parser);
-
-    if (next != TK_CASE && next != TK_DEFAULT) {
-      break;
-    }
-
-    append(&list, case_clause(parser));
-  }
-
-  return list.head;
-}
-
-/*
-switch_statement
-  : TK_SWITCH '(' expression ')' '{' case_clause_list '}'
-  ;
-*/
-static Node *switch_statement(Parser *parser)
-{
-  Node *expr = NULL;
-  Node *case_list = NULL;
-
-  assert_next_token(parser, TK_SWITCH);
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'if'");
-    skip_until(parser, ')');
-  }
-
-  expr = expression(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after conditional expression");
-    skip_until(parser, '{');
-    put_back_token(parser);
-  }
-
-  if (!expect(parser, '{')) {
-    parse_error(parser, "missing '{' after 'switch' condition");
-    skip_until(parser, ';');
-  }
-
-  case_list = case_clause_list(parser);
-
-  if (!expect(parser, '}')) {
-    parse_error(parser, "missing '}' after 'switch' case clauses");
-    skip_until(parser, ';');
-  }
-
-  return new_node(NODE_SWITCH, expr, case_list);
-}
-
-/*
-for_statement
-  : TK_FOR '(' expression ';' expression ';' expression ')' statement
-  ;
-*/
-static Node *for_statement(Parser *parser)
-{
-  Node *init = NULL;
-  Node *cond = NULL;
-  Node *expr = NULL;
-  Node *loop = NULL;
-  Node *iter = NULL;
-
-  assert_next_token(parser, TK_FOR);
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'for'");
-    skip_until(parser, ')');
-  }
-
-  if (!expect(parser, ';')) {
-    init = expression(parser);
-    if (!expect(parser, ';')) {
-      parse_error(parser, "missing ';' after the first 'for' expression");
-      skip_until(parser, ')');
-    }
-  }
-
-  if (!expect(parser, ';')) {
-    expr = expression(parser);
-    if (!expect(parser, ';')) {
-      parse_error(parser, "missing ';' after the second 'for' expression");
-      skip_until(parser, ')');
-    }
-  }
-
-  if (!expect(parser, ')')) {
-    iter = expression(parser);
-    if (!expect(parser, ')')) {
-      parse_error(parser, "missing ')' after the third 'for' expression");
-      skip_until(parser, '{');
-      put_back_token(parser);
-    }
-  }
-
-  loop = new_node(NODE_FOR_LOOP, iter, statement(parser));
-  cond = new_node(NODE_FOR_COND, expr, loop);
-
-  return new_node(NODE_FOR_INIT, init, cond);
-}
-
-/*
-while_statement
-  : TK_WHILE '(' expression ')' statement
-  ;
-*/
-static Node *while_statement(Parser *parser)
-{
-  Node *expr = NULL;
-  Node *stmt = NULL;
-
-  assert_next_token(parser, TK_WHILE);
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'while'");
-    skip_until(parser, ')');
-  }
-
-  expr = expression(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after conditional expression");
-    skip_until(parser, '{');
-    put_back_token(parser);
-  }
-
-  stmt = statement(parser);
-
-  return new_node(NODE_WHILE, expr, stmt);
-}
-
-/*
-do_while_statement
-  : TK_DO statement '(' expression ')' TK_WHILE
-  ;
-*/
-static Node *do_while_statement(Parser *parser)
-{
-  Node *expr = NULL;
-  Node *stmt = NULL;
-
-  assert_next_token(parser, TK_DO);
-
-  stmt = statement(parser);
-
-  if (!expect(parser, TK_WHILE)) {
-    parse_error(parser, "missing 'while' after statements");
-    skip_until(parser, ';');
-    put_back_token(parser);
-  }
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after 'do'");
-    skip_until(parser, ')');
-  }
-
-  expr = expression(parser);
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after conditional expression");
-    skip_until(parser, ';');
-    put_back_token(parser);
-  }
-
-  if (!expect(parser, ';')) {
-    parse_error(parser, "missing ';' at the end of 'do while' statement");
-    skip_until(parser, ';');
-  }
-
-  return new_node(NODE_DO_WHILE, stmt, expr);
-}
-
-/*
-statement
-  : assignment_or_function_call
-  | return_statement
-  | vardump_statement
-  ;
-*/
-static Node *statement(Parser *parser)
-{
-  Node *stmt = NULL;
-
-  switch (peek_next_token(parser)) {
-
-  /* selection statements */
-  case TK_IF:
-    stmt = if_statement(parser);
-    break;
-  case TK_SWITCH:
-    stmt = switch_statement(parser);
-    break;
-
-  /* iteration statements */
-  case TK_FOR:
-    stmt = for_statement(parser);
-    break;
-  case TK_WHILE:
-    stmt = while_statement(parser);
-    break;
-  case TK_DO:
-    stmt = do_while_statement(parser);
-    break;
-
-  /* jump statements */
-  case TK_BREAK:
-    stmt = break_statement(parser);
-    break;
-  case TK_CONTINUE:
-    stmt = continue_statement(parser);
-    break;
-  case TK_RETURN:
-    stmt = return_statement(parser);
-    break;
-  case TK_GOTO:
-    stmt = goto_statement(parser);
-    break;
-
-  /* builtin operators */
-  case TK_VARDUMP:
-    stmt = vardump_statement(parser);
-    break;
-
-  /* labeled statements */
-  case TK_LABEL:
-    stmt = labeled_statement(parser);
-    break;
-
-  /*
-  case TK_IDENTIFIER:
-    stmt = assignment_or_function_call(parser);
-    break;
-  */
-  case TK_IDENTIFIER:
-  case TK_INC:
-  case TK_DEC:
-    stmt = expression_statement(parser);
-    break;
-
-  case ';':
-    stmt = null_statement(parser);
-    break;
-
-  case '{':
-    stmt = block_statement(parser);
-    break;
-
-  default:
-    return NULL;
-  }
-
-  return stmt;
-}
-
-/*
-function_body
-  : '{' variable_declaration_list statement_list '}'
-  ;
-*/
-/* TODO should use block_statement? */
-static Node *function_body(Parser *parser)
-{
-  return block_statement(parser);
-}
-
-/*
-function_parameters
-  : '(' parameter_list ')'
-  ;
-*/
-static Node *function_parameters(Parser *parser)
-{
-  Node *param_list = NULL;
-
-  if (!expect(parser, '(')) {
-    parse_error(parser, "missing '(' after return type");
-    skip_until(parser, ')');
-    return NULL;
-  }
-
-  if (!expect(parser, ')')) {
-    parse_error(parser, "missing ')' after parameter list");
-    skip_until(parser, ')');
-    return NULL;
-  }
-
-  return param_list;
-}
-
-/*
-function_definition
-  : TK_FUNCTION TK_IDENTIFIER ':' type_specifier function_parameters function_body
-  ;
-*/
-static Node *function_definition(Parser *parser)
-{
-  Node *func_def = NULL;
-  Symbol *symbol = NULL;
-
-  assert_next_token(parser, TK_FUNCTION);
-
-  if (!expect(parser, TK_IDENTIFIER)) {
-    parse_error(parser, "missing function name after 'function'");
-    skip_until(parser, ':');
-    put_back_token(parser); /* put back ':' for function_parameters */
-  }
-
-  symbol = SymbolTable_Add(
-      symbol_table(parser),
-      token_name(parser),
-      SYM_FUNCTION);
-
-  if (symbol == NULL) {
-    parse_error(parser, "function already defined");
-    return NULL;
-  }
-
-  if (!expect(parser, ':')) {
-    parse_error(parser, "missing ':' after function name");
-    skip_until(parser, '(');
-    return NULL;
-  }
-
-  symbol->data_type = type_specifier(parser);
-
-  func_def = AstNode_New(NODE_FUNC_DEF);
-  func_def->left  = function_parameters(parser);
-  func_def->right = function_body(parser);
-  func_def->value.symbol = symbol;
-
-  return func_def;
-}
-
-/*
-program
-  : function_definition
-  ;
-*/
-static Node *program(Parser *parser)
-{
-  switch (peek_next_token(parser)) {
-
-  case TK_FUNCTION:
-    return function_definition(parser);
-
-  default:
-    break;
-  }
-
-  return NULL;
-}
 #endif

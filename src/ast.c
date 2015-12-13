@@ -4,13 +4,50 @@ See LICENSE and README
 */
 
 #include "ast.h"
-#include "datatype.h"
-#include "memory.h"
-#include "symbol.h"
-
 #include <stdio.h>
 #include <assert.h>
 
+typedef struct ast_node node_t;
+static void print_node_recursive(const node_t *node, int depth);
+
+void ast_print_tree(const struct ast_node *node)
+{
+  print_node_recursive(node, 0);
+}
+
+static const struct {
+  int kind;
+  const char *string;
+} ast_table[] = {
+#define T(kind,str) {kind,str},
+  AST_KIND_LIST(T)
+#undef T
+  {0,""} /* for no-comma entry */
+};
+
+static void print_node_recursive(const node_t *node, int depth)
+{
+  int i;
+  int next_depth = depth;
+
+  if (node == NULL) {
+    return;
+  }
+
+  for (i = 0; i < depth; i++) {
+    printf("  ");
+  }
+
+  if (node->kind != AST_LIST) {
+    printf("%s\n", ast_table[node->kind].string);
+    next_depth++;
+  }
+
+  print_node_recursive(node->lnode, depth);
+  print_node_recursive(node->rnode, depth);
+}
+
+#if 0
 static void free_node_recursive(struct AstNode *node);
 static void print_node_recursive(const struct AstNode *node, int depth);
 
@@ -146,4 +183,4 @@ static void print_node_recursive(const struct AstNode *node, int depth)
   print_node_recursive(node->left, depth + 1);
   print_node_recursive(node->right, depth + 1);
 }
-
+#endif
