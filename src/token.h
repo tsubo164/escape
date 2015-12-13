@@ -23,9 +23,9 @@ See LICENSE and README
   T(TK_GE, ">=") \
   T(TK_AND, "&&") \
   T(TK_OR, "||") \
-  T(TK_INT_LITERAL, "int_literal") \
-  T(TK_FLOAT_LITERAL, "float_literal") \
-  T(TK_IDENT, "identifier")
+  T(TK_NUMBER, "number") \
+  T(TK_IDENTIFIER, "identifier") \
+  T(TK_EOS, "EOS")
 
 #define KEYWORD_LIST(T) \
   T(TK_BOOL, "bool") \
@@ -54,7 +54,6 @@ enum token_kind {
   TK_BEGIN = 256,
 #define T(tag,str) tag,
   TOKEN_LIST(T)
-  KEYWORD_BEGIN,
   KEYWORD_LIST(T)
 #undef T
   TK_END
@@ -78,6 +77,6 @@ extern int int_value_of(const struct token *tok);
 extern float float_value_of(const struct token *tok);
 extern const char *word_value_of(const struct token *tok);
 
-extern const char *token_to_string(const struct token *tok);
+extern const char *kind_to_string(int kind);
 
 #endif /* XXX_H */

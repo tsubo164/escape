@@ -25,7 +25,7 @@ static int assert_next(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    printf("%s ", token_to_string(tok));
+    printf("%s ", kind_to_string(tok->kind));
     return 1;
   }
   else {
@@ -38,12 +38,10 @@ static const token_t *expect(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    /*
-    printf("%s ", token_to_string(tok));
-    */
     return tok;
   } else {
-    fprintf(stderr, "syntax error\n");
+    fprintf(stderr, "syntak error, expected '%s' but got '%s'.\n",
+        kind_to_string(kind), kind_to_string(tok->kind));
     return NULL;
   }
 }
@@ -52,7 +50,7 @@ static int is_next(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    printf("%s ", token_to_string(tok));
+    printf("%s ", kind_to_string(tok->kind));
     return 1;
   } else {
     unget_token(p);
@@ -74,7 +72,7 @@ static node_t *list_node(node_t *current, node_t *next)
 
 node_t *ast_int_literal(long value)
 {
-  node_t *n = new_node(AST_INT_LITERAL);
+  node_t *n = new_node(AST_LITERAL);
   n->ivalue = value;
   return n;
 }
@@ -86,42 +84,59 @@ node_t *ast_var_decl(node_t *init)
   return n;
 }
 
+/* prototypes */
+static node_t *expression(parser_t *p);
+
 /*
 primary_expression
-  : TK_INT_LITERAL
-  | TK_FLOAT_LITERAL
+  : TK_NUMBER
   | TK_IDENTIFIER
   | '(' expression ')'
   ;
 */
 static node_t *primary_expression(parser_t *p)
 {
+  node_t *expr = NULL;
   const token_t *tok = get_token(p);
 
   switch (kind_of(tok)) {
-  case TK_INT_LITERAL:
+  case TK_NUMBER:
     return ast_int_literal(tok->value.Integer);
     break;
+
+  case TK_IDENTIFIER:
+    printf("[%s]\n", word_value_of(tok));
+    break;
+
+  case '(':
+    printf("----------\n");
+    expr = expression(p);
+    if (!expect(p, ')')) {
+      return NULL;
+    }
+    break;
+
   default:
     break;
   }
-  return NULL;
+  return expr;
 }
 
 /*
 expression
-  : logical_or_expression
+  : assignment_expression
   ;
 */
 static node_t *expression(parser_t *p)
 {
+  /* TODO TEMP */
   return primary_expression(p);
 }
 
 /*
 variable_declaration
-  : "var" identifier type ';'
-  : "var" identifier [type] = expression ';'
+  : TK_VAR identifier type ';'
+  | TK_VAR identifier [type] = expression ';'
   ;
 */
 static node_t *variable_declaration(parser_t *p)
@@ -130,7 +145,7 @@ static node_t *variable_declaration(parser_t *p)
   node_t *expr = NULL;
   assert_next(p, TK_VAR);
 
-  tok = expect(p, TK_IDENT);
+  tok = expect(p, TK_IDENTIFIER);
   if (!tok) {
     return NULL;
   }
@@ -168,21 +183,60 @@ static node_t *variable_declaration(parser_t *p)
 }
 
 /*
+expression_statement
+  : ';'
+  | expression ';'
+  ;
+*/
+static node_t *expression_statement(parser_t *p)
+{
+  node_t *expr = expression(p);
+
+  if (!expect(p, ';')) {
+  }
+  /*
+  const token_t *tok = get_token(p);
+  if (kind_of(tok) != ';') {
+    fprintf(stderr,"syerror, expected ';' but got '%s'.\n", kind_to_string(tok->kind));
+  }
+  */
+
+#if 0
+  if (!expect(p, ';')) {
+    /* TODO
+    parse_error(p, "missing ';' at the end of expression statement");
+    skip_until(p, ';');
+    */
+  }
+#endif
+
+  return expr;
+}
+
+/*
 statement
   : variable_declaration
+  | expression_statement
   | ...
   ;
 */
 static node_t *statement(parser_t *p)
 {
   const token_t *tok = get_token(p);
+
   switch (kind_of(tok)) {
+
   case TK_VAR:
     unget_token(p);
     return variable_declaration(p);
-    break;
+
+  case TK_IDENTIFIER:
+    unget_token(p);
+    return expression_statement(p);
+
   default:
-    break;
+    unget_token(p);
+    return expression_statement(p);
   }
   return NULL;
 }
@@ -871,7 +925,8 @@ static Node *logical_or_expression(Parser *parser)
 
 /*
 assignment_expression
-  : logical_or_expression
+  : conditional_expression
+  | unary_expression '=' assignment_expression
   ;
 */
 static Node *assignment_expression(Parser *parser)

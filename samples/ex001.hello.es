@@ -9,6 +9,9 @@ var n int; // = 0
 var hoge int = 123;
 var foo int = 999111;
 
+hoge;
+(hoge;)
+
 fn main() int
 {
 	print("Hello, world!\n");

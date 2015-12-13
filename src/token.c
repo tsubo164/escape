@@ -54,16 +54,16 @@ static const struct tks{
 };
 static const size_t N_TOKENS = sizeof(tokstr)/sizeof(struct tks) - 1;
 
-const char *token_to_string(const struct token *tok)
+const char *kind_to_string(int kind)
 {
   int i;
 
-  if (tok->kind < 128) {
-    return ascii2str[tok->kind];
+  if (kind < 128) {
+    return ascii2str[kind];
   }
 
   for (i = 0; i < N_TOKENS; i++) {
-    if (tokstr[i].kind == tok->kind) {
+    if (tokstr[i].kind == kind) {
       return tokstr[i].str;
     }
   }

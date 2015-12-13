@@ -7,7 +7,7 @@ See LICENSE and README
 #define AST_H
 
 #define AST_KIND_LIST(T) \
-  T(AST_INT_LITERAL, "int_literal") \
+  T(AST_LITERAL, "literal") \
   T(AST_LIST, "list") \
   T(AST_VAR_DECL, "var_decl")
 

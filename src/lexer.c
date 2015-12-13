@@ -71,7 +71,7 @@ static void keyword_or_identifier(struct token *tok)
       return;
     }
   }
-  tok->kind = TK_IDENT;
+  tok->kind = TK_IDENTIFIER;
 }
 
 static int isidentifier(char c)
@@ -104,6 +104,57 @@ enum number_type {
   NUM_FLOAT
 };
 
+static char scan_number(struct lexer *l, struct token *tok)
+{
+  char *dst = tok->value.word;
+  char c = '\0';
+  char prev = c;
+  int has_e = 0;
+  int has_pm = 0;
+  int has_dot = 0;
+
+  c = get_ch(l);
+
+  if (c != '.' && isdigit(c) != 0) {
+    /* TODO assert */
+  }
+  *dst++ = prev = c;
+
+  for (;;) {
+    c = get_ch(l);
+
+    if (isdigit(c)) {
+      *dst++ = prev = c;
+    }
+    else if (toupper(c)=='E' && prev!='.' && has_e==0) {
+      *dst++ = prev = c;
+      has_e = 1;
+    }
+    else if ((c=='+' || c=='-') && toupper(prev)=='E' && has_pm==0) {
+      *dst++ = prev = c;
+      has_pm = 1;
+    }
+    else if (c=='.' && has_dot==0) {
+      *dst++ = prev = c;
+      has_dot = 1;
+    }
+    else if (toupper(c)=='F') {
+      *dst++ = prev = c;
+      break;
+    }
+    else {
+      unget_ch(l);
+      break;
+    }
+  }
+
+  *dst = '\0';
+  tok->kind = TK_NUMBER;
+
+  return prev;
+}
+
+#if 0
 static char scan_number(struct lexer *l, struct token *tok)
 {
   char buf[265] = {'\0'};
@@ -152,12 +203,12 @@ state_initial:
   case NUM_FLOAT:
   case NUM_DOUBLE:
     tok->value.Float = strtod(buf, &end);
-    tok->kind = TK_FLOAT_LITERAL;
+    tok->kind = TK_NUMBER;
     break;
 
   default:
     tok->value.Integer = strtol(buf, &end, 0);
-    tok->kind = TK_INT_LITERAL;
+    tok->kind = TK_NUMBER;
     break;
   }
 
@@ -167,6 +218,7 @@ state_initial:
 
   return ch;
 }
+#endif
 
 static int read_token(struct lexer *l, struct token *tok)
 {
@@ -184,6 +236,10 @@ state_initial:
   case '\n':
     detect_newline(l);
     goto state_initial;
+
+  case '\0':
+    tok->kind = TK_EOS;
+    goto state_final;
 
   case '+':
     ch = get_ch(l);

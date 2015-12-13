@@ -3,8 +3,8 @@ Copyright (c) 2012 Hiroshi Tsubokawa
 See LICENSE and README
 */
 
-#ifndef ES_STREAM_H
-#define ES_STREAM_H
+#ifndef STREAM_H
+#define STREAM_H
 
 #include <stdio.h>
 
@@ -37,4 +37,4 @@ extern void close_stream(struct stream *s);
 extern char stream_getc(struct stream *s);
 extern char stream_ungetc(struct stream *s);
 
-#endif /* ES_XXX_H */
+#endif /* XXX_H */

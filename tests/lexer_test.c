@@ -9,6 +9,7 @@ int main()
     FILE *file = fopen(filename, "w");
     const char src[] =
         " fn if for while else 123 .23 \n  1.2312e+3\n \t 23.23f \v 82."
+        " .31E+4-23.4f\n"
         "  +  ++  - -- \n"
         " || | && &\n"
         "  ! = != ==  \n"
@@ -49,26 +50,37 @@ int main()
 		TEST_INT(kind_of(tok), TK_ELSE);
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_INT_LITERAL);
-		TEST_INT(int_value_of(tok), 123);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), "123");
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_FLOAT_LITERAL);
-		TEST_FLOAT(float_value_of(tok), .23);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), ".23");
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_FLOAT_LITERAL);
-		TEST_FLOAT(float_value_of(tok), 1.2312e+3);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), "1.2312e+3");
 
 		TEST_INT(lex_get_line_num(&l), 2);
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_FLOAT_LITERAL);
-		TEST_FLOAT(float_value_of(tok), 23.23);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), "23.23f");
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_FLOAT_LITERAL);
-		TEST_FLOAT(float_value_of(tok), 82.);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), "82.");
+
+		tok = lex_get_token(&l);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), ".31E+4");
+
+		tok = lex_get_token(&l);
+		TEST_INT(kind_of(tok), '-');
+
+		tok = lex_get_token(&l);
+		TEST_INT(kind_of(tok), TK_NUMBER);
+		TEST_STR(word_value_of(tok), "23.4f");
 
 		tok = lex_get_token(&l);
 		TEST_INT(kind_of(tok), '+');
@@ -155,7 +167,7 @@ int main()
 		TEST_INT(kind_of(tok), '/');
 
 		tok = lex_get_token(&l);
-		TEST_INT(kind_of(tok), TK_IDENT);
+		TEST_INT(kind_of(tok), TK_IDENTIFIER);
 		TEST_STR(word_value_of(tok), "hoge");
 
 		tok = lex_get_token(&l);
