@@ -29,6 +29,7 @@ extern void lex_finish(struct lexer *l);
 
 extern const struct token *lex_get_token(struct lexer *l);
 extern const struct token *lex_unget_token(struct lexer *l);
+extern const struct token *lex_current_token(const struct lexer *l);
 
 extern int lex_get_line_num(const struct lexer *l);
 extern int lex_get_column_num(const struct lexer *l);

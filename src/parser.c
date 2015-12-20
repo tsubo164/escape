@@ -12,6 +12,12 @@ typedef struct ast_node node_t;
 typedef struct token token_t;
 typedef struct parser parser_t;
 
+static void syntax_error(parser_t *p, const char *msg)
+{
+  fprintf(stderr, "syntak error, %s\n", msg);
+  exit(1);
+}
+
 static const token_t *get_token(parser_t *p)
 {
   return lex_get_token(&p->lex);
@@ -20,6 +26,11 @@ static const token_t *get_token(parser_t *p)
 static const token_t *unget_token(parser_t *p)
 {
   return lex_unget_token(&p->lex);
+}
+
+static const token_t *current_token(parser_t *p)
+{
+  return lex_current_token(&p->lex);
 }
 
 static int assert_next(parser_t *p, int kind)
@@ -43,58 +54,68 @@ static int expect(parser_t *p, int kind)
   if (kind_of(tok) == kind) {
     return 1;
   } else {
-    fprintf(stderr, "syntak error, expected '%s' but got '%s'.\n",
-        kind_to_string(kind), kind_to_string(tok->kind));
+    fprintf(stderr, "syntak error: %d, expected '%s' but got '%s'.\n",
+        lex_get_line_num(&p->lex), kind_to_string(kind), kind_to_string(tok->kind));
     exit(1);
     return 0;
   }
 }
 
-/*
-static int is_next(parser_t *p, int kind)
+static int next(parser_t *p, int kind)
 {
   const token_t *tok = get_token(p);
   if (kind_of(tok) == kind) {
-    printf("%s ", kind_to_string(tok->kind));
     return 1;
   } else {
     unget_token(p);
     return 0;
   }
 }
-*/
 
-node_t *new_node(int kind)
+#if 0
+static const Token *get_current_token(const parser_t *p)
+{
+  return &p->token_buf[p->curr_token_index];
+}
+
+static int token_kind(const parser_t *p) {
+  const token_t *tok = get_current_token(p);
+  return token->kind;
+}
+#endif
+
+node_t *new_node(int kind, node_t *left, node_t *right)
 {
   node_t *n = MEM_ALLOC(node_t);
   n->kind = kind;
-  n->lnode = NULL;
-  n->rnode = NULL;
+  n->lnode = left;
+  n->rnode = right;
   return n;
 }
 
 static node_t *list_node(node_t *current, node_t *next)
 {
-  node_t *node = new_node(AST_LIST);
-  node->lnode = current;
-  node->rnode = next;
-  return node;
-  /*
-  return current->next = next;
-  */
+  return new_node(AST_LIST, current, next);
 }
 
 node_t *ast_number(const char *number_string)
 {
-  node_t *n = new_node(AST_LITERAL);
-  strcpy(n->word,number_string);
+  node_t *n = new_node(AST_LITERAL, NULL, NULL);
+  strcpy(n->value.word,number_string);
+  return n;
+}
+
+node_t *ast_identifier(const char *number_string)
+{
+  node_t *n = new_node(AST_SYMBOL, NULL, NULL);
+  strcpy(n->value.word,number_string);
   return n;
 }
 
 node_t *ast_var_decl(node_t *init)
 {
-  node_t *n = new_node(AST_VAR_DECL);
-  n->init = init;
+  node_t *n = new_node(AST_VAR_DECL, NULL, NULL);
+  n->lnode = init;
   return n;
 }
 
@@ -335,20 +356,17 @@ static node_t *primary_expression(parser_t *p)
       /* TODO error handling */
     }
 #endif
-    return new_node(AST_NUL);
-    break;
+    return ast_identifier(word_value_of(tok));
 
   case '(':
     node = expression(p);
     if (!expect(p, ')')) {
-      parse_error(p, "missing ')' in expression"/*, token_string(p)*/);
     }
     break;
 
   default:
-    parse_error(p, "unexpected token");
+    syntax_error(p, "uexpected token");
     unget_token(p);
-    node = new_node(AST_NUL);
     break;
   }
 
@@ -360,35 +378,19 @@ postfix_expression
   : primary_expression
   | postfix_expression TK_INC
   | postfix_expression TK_DEC
-  | postfix_expression '(' argument_expression_list ')'
+  | ...
   ;
 */
 static node_t *postfix_expression(parser_t *p)
 {
-  node_t *root = primary_expression(p);
-#if 0
-  const token_t *tok = get_token(p);
-  if (kind_of(tok) == TK_INC) {
+  node_t *node = primary_expression(p);
+  if (next(p, TK_INC)) {
+    node = new_node(AST_POST_INC, node, NULL);
   }
-  else if (kind_of(tok) == TK_INC) {
+  else if (next(p, TK_DEC)) {
+    node = new_node(AST_POST_DEC, node, NULL);
   }
-  if (expect(p, TK_INC) || expect(p, TK_DEC)) {
-    const int new_op = kind_of(p) == TK_INC ? NODE_POST_INC : NODE_POST_DEC;
-    root = new_node(new_op, root, NULL);
-  }
-  /* TODO TEST */
-  else if (expect(p, '(')) {
-    node_t *args = argument_expression_list(p);
-
-    if (!expect(p, ')')) {
-      parse_error(p, "missing ')' at the end of function call");
-      skip_until(p, ';');
-    }
-
-    root = new_node(NODE_CALL_EXPR, root, args);
-  }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -396,20 +398,21 @@ unary_expression
   : postfix_expression
   | TK_INC unary_expression
   | TK_DEC unary_expression
+  | ...
   ;
 */
 static node_t *unary_expression(parser_t *p)
 {
-  node_t *root = NULL;
-#if 0
-  if (expect(p, TK_INC) || expect(p, TK_DEC)) {
-    const int new_op = token_tag(p) == TK_INC ? NODE_INC : NODE_DEC;
-    root = new_node(new_op, root, unary_expression(p));
-  } else {
-    root = postfix_expression(p);
+  node_t *node = NULL;
+  if (next(p, TK_INC)) {
+    node = new_node(AST_PRE_INC, unary_expression(p), NULL);
   }
-#endif
-  return root;
+  else if (next(p, TK_DEC)) {
+    node = new_node(AST_PRE_DEC, unary_expression(p), NULL);
+  } else {
+    node = postfix_expression(p);
+  }
+  return node;
 }
 
 /*
@@ -421,19 +424,16 @@ multiplicative_expression
 */
 static node_t *multiplicative_expression(parser_t *p)
 {
-  node_t *root = unary_expression(p);
-#if 0
-  while (expect(p, '*') || expect(p, '/') || expect(p, '%')) {
-    int new_op = NODE_NULL;
-    switch (token_tag(p)) {
-    case '*': new_op = NODE_MUL; break;
-    case '/': new_op = NODE_DIV; break;
-    case '%': new_op = NODE_MOD; break;
-    }
-    root = new_node(new_op, root, unary_expression(p));
+  node_t *node = unary_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if      (next(p, '*')) { new_op = AST_MUL; }
+    else if (next(p, '/')) { new_op = AST_DIV; }
+    else if (next(p, '%')) { new_op = AST_MOD; }
+    else { break; }
+    node = new_node(new_op, node, unary_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -445,14 +445,15 @@ additive_expression
 */
 static node_t *additive_expression(parser_t *p)
 {
-  node_t *root = multiplicative_expression(p);
-#if 0
-  while (expect(p, '+') || expect(p, '-')) {
-    const int new_op = token_tag(p) == '+' ? NODE_ADD : NODE_SUB;
-    root = new_node(new_op, root, multiplicative_expression(p));
+  node_t *node = multiplicative_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if      (next(p, '+')) { new_op = AST_ADD; }
+    else if (next(p, '-')) { new_op = AST_SUB; }
+    else { break; }
+    node = new_node(new_op, node, multiplicative_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -464,14 +465,15 @@ shift_expression
 */
 static node_t *shift_expression(parser_t *p)
 {
-  node_t *root = additive_expression(p);
-#if 0
-  while (expect(p, TK_LSHIFT) || expect(p, TK_RSHIFT)) {
-    const int new_op = token_tag(p) == TK_LSHIFT ? NODE_LSHIFT : NODE_RSHIFT;
-    root = new_node(new_op, root, additive_expression(p));
+  node_t *node = additive_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if      (next(p, TK_LSHIFT)) { new_op = AST_LSHIFT; }
+    else if (next(p, TK_RSHIFT)) { new_op = AST_RSHIFT; }
+    else { break; }
+    node = new_node(new_op, node, additive_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -485,23 +487,17 @@ relational_expression
 */
 static node_t *relational_expression(parser_t *p)
 {
-  node_t *root = shift_expression(p);
-#if 0
-  while (expect(p, '<')   ||
-         expect(p, '>')   ||
-         expect(p, TK_LE) ||
-         expect(p, TK_GE)) {
-    int new_op = NODE_NULL;
-    switch (token_tag(p)) {
-    case '<':   new_op = NODE_LT; break;
-    case '>':   new_op = NODE_GT; break;
-    case TK_LE: new_op = NODE_LE; break;
-    case TK_GE: new_op = NODE_GE; break;
-    }
-    root = new_node(new_op, root, shift_expression(p));
+  node_t *node = shift_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if      (next(p, '<'))   { new_op = AST_LT; }
+    else if (next(p, '>'))   { new_op = AST_GT; }
+    else if (next(p, TK_LE)) { new_op = AST_LE; }
+    else if (next(p, TK_GE)) { new_op = AST_GE; }
+    else { break; }
+    node = new_node(new_op, node, shift_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -513,14 +509,15 @@ equality_expression
 */
 static node_t *equality_expression(parser_t *p)
 {
-  node_t *root = relational_expression(p);
-#if 0
-  while (expect(p, TK_EQ) || expect(p, TK_NE)) {
-    const int new_op = token_tag(p) == TK_EQ ? NODE_EQ : NODE_NE;
-    root = new_node(new_op, root, relational_expression(p));
+  node_t *node = relational_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if      (next(p, TK_EQ))   { new_op = AST_EQ; }
+    else if (next(p, TK_NE))   { new_op = AST_NE; }
+    else { break; }
+    node = new_node(new_op, node, relational_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -531,13 +528,14 @@ bitwise_and_expression
 */
 static node_t *bitwise_and_expression(parser_t *p)
 {
-  node_t *root = equality_expression(p);
-#if 0
-  while (expect(p, '&')) {
-    root = new_node(NODE_BITWISE_AND, root, equality_expression(p));
+  node_t *node = equality_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if (next(p, '&')) { new_op = AST_BITWISE_AND; }
+    else { break; }
+    node = new_node(new_op, node, equality_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -548,13 +546,14 @@ bitwise_xor_expression
 */
 static node_t *bitwise_xor_expression(parser_t *p)
 {
-  node_t *root = bitwise_and_expression(p);
-#if 0
-  while (expect(p, '^')) {
-    root = new_node(NODE_BITWISE_XOR, root, bitwise_and_expression(p));
+  node_t *node = bitwise_and_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if (next(p, '^')) { new_op = AST_BITWISE_XOR; }
+    else { break; }
+    node = new_node(new_op, node, bitwise_and_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -565,13 +564,14 @@ bitwise_or_expression
 */
 static node_t *bitwise_or_expression(parser_t *p)
 {
-  node_t *root = bitwise_xor_expression(p);
-#if 0
-  while (expect(p, '|')) {
-    root = new_node(NODE_BITWISE_OR, root, bitwise_xor_expression(p));
+  node_t *node = bitwise_xor_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if (next(p, '|')) { new_op = AST_BITWISE_OR; }
+    else { break; }
+    node = new_node(new_op, node, bitwise_xor_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -582,13 +582,14 @@ logical_and_expression
 */
 static node_t *logical_and_expression(parser_t *p)
 {
-  node_t *root = bitwise_or_expression(p);
-#if 0
-  while (expect(p, TK_AND)) {
-    root = new_node(NODE_AND, root, bitwise_or_expression(p));
+  node_t *node = bitwise_or_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if (next(p, TK_AND)) { new_op = AST_AND; }
+    else { break; }
+    node = new_node(new_op, node, bitwise_or_expression(p));
   }
-#endif
-  return root;
+  return node;
 }
 
 /*
@@ -599,13 +600,25 @@ logical_or_expression
 */
 static node_t *logical_or_expression(parser_t *p)
 {
-  node_t *root = logical_and_expression(p);
-#if 0
-  while (expect(p, TK_OR)) {
-    root = new_node(NODE_OR, root, logical_and_expression(p));
+  node_t *node = logical_and_expression(p);
+  for (;;) {
+    int new_op = AST_NUL;
+    if (next(p, TK_OR)) { new_op = AST_OR; }
+    else { break; }
+    node = new_node(new_op, node, logical_and_expression(p));
   }
-#endif
-  return root;
+  return node;
+}
+
+/*
+conditional_expression
+  : logical_or_expression
+  | logical_or_expression '?' expression ':' conditional_expression
+  ;
+*/
+static node_t *conditional_expression(parser_t *p)
+{
+  return logical_or_expression(p);
 }
 
 /*
@@ -616,22 +629,28 @@ assignment_expression
 */
 static node_t *assignment_expression(parser_t *p)
 {
-  node_t *lval = logical_or_expression(p);
-#if 0
-  if (expect(p, '=')) {
-    return new_node(NODE_ASSIGN, lval, expression(p));
+  node_t *node = conditional_expression(p);
+  for (;;) {
+    if (next(p, '=')) {
+      node = new_node(AST_ASSIGN, node, assignment_expression(p));
+    } else {
+      break;
+    }
   }
-#endif
-  return lval;
+  return node;
 }
 
 /*
 expression
-  : logical_or_expression
+  : assignment_expression
+  | expression ',' assignment_expression
   ;
 */
 static node_t *expression(parser_t *p)
 {
+  /*
+  node_t *node = conditional_expression(p);
+  */
   node_t *node = assignment_expression(p);
   return node;
 }
@@ -644,26 +663,27 @@ expression_statement
 */
 static node_t *expression_statement(parser_t *p)
 {
-  node_t *expr = expression(p);
-#if 0
-  if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of expression statement");
-    skip_until(p, ';');
+  node_t *expr = NULL;
+
+  if (peek_token(p) == ';') {
+    return new_node(AST_EXPR_STMT, NULL, NULL);
   }
-  return new_node(NODE_EXPR_STMT, expr, NULL);
-#endif
-  return expr;
+ 
+  expr = expression(p);
+  if (!expect(p, ';')) {
+  }
+  return new_node(AST_EXPR_STMT, expr, NULL);
 }
 
 /*
-null_statement
+empty_statement
   : ';'
   ;
 */
-static node_t *null_statement(parser_t *p)
+static node_t *empty_statement(parser_t *p)
 {
   assert_next(p, ';');
-  return new_node(AST_NUL);
+  return new_node(AST_EMPTY_STMT, NULL, NULL);
 }
 
 /*
@@ -671,10 +691,10 @@ vardump_statement
   : "vardump" identifier
   ;
 */
+#if 0
 static node_t *vardump_statement(parser_t *p)
 {
   node_t *stmt = NULL;
-#if 0
   Symbol *symbol = NULL;
 
   assert_next_token(p, TK_VARDUMP);
@@ -702,9 +722,9 @@ static node_t *vardump_statement(parser_t *p)
     parse_error(p, "missing ';' at the end of vardump statement");
     skip_until(p, ';');
   }
-#endif
   return stmt;
 }
+#endif
 
 /*
 goto_statement
@@ -713,40 +733,19 @@ goto_statement
 */
 static node_t *goto_statement(parser_t *p)
 {
-  node_t *symnode = NULL;
-#if 0
-  Symbol *symbol = NULL;
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
 
-  assert_next_token(p, TK_GOTO);
-
+  assert_next(p, TK_GOTO);
   if (!expect(p, TK_IDENTIFIER)) {
-    parse_error(p, "missing identifier after 'goto'");
-    skip_until(p, ';');
-    return AstNode_New(NODE_NULL);
   }
-
-  symbol = SymbolTable_Add(
-      symbol_table(p),
-      token_name(p),
-      SYM_LABEL);
-
-  if (symbol == NULL) {
-    parse_error(p, "undefined variable specified for 'goto'");
-    skip_until(p, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  symnode = AstNode_New(NODE_SYMBOL);
-  symnode->value.symbol = symbol;
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
 
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of goto statement");
-    skip_until(p, ';');
   }
 
-  return new_node(NODE_GOTO_STMT, symnode, NULL);
-#endif
-  return symnode;
+  return new_node(AST_GOTO, ast_identifier(buf), NULL);
 }
 
 /*
@@ -756,87 +755,61 @@ labeled_statement
 */
 static node_t *labeled_statement(parser_t *p)
 {
-  node_t *symnode = NULL;
-#if 0
-  Symbol *symbol = NULL;
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
+  node_t *stmt = NULL;
 
-  assert_next_token(p, TK_LABEL);
-
+  assert_next(p, TK_LABEL);
   if (!expect(p, TK_IDENTIFIER)) {
-    parse_error(p, "missing identifier after 'label'");
-    skip_until(p, ':');
-    return AstNode_New(NODE_NULL);
   }
-
-  symbol = SymbolTable_Add(
-      symbol_table(p),
-      token_name(p),
-      SYM_LABEL);
-
-  symnode = AstNode_New(NODE_SYMBOL);
-  symnode->value.symbol = symbol;
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
 
   if (!expect(p, ':')) {
-    parse_error(p, "missing ':' at the end of varialbe declaration");
-    skip_until(p, ';');
   }
 
-  return new_node(NODE_LABELED_STMT, symnode, statement(p));
-#endif
-  return symnode;
+  stmt = statement(p);
+  if (stmt == NULL) {
+    syntax_error(p, "labeled with no statement");
+  }
+
+  return new_node(AST_LABEL, ast_identifier(buf), stmt);
 }
 
 /*
 variable_declaration
-  : "var" identifier ":" type_specifier initializer
+  : TK_VAR identifier type_specifier ';'
+  | TK_VAR identifier type_specifier initializer ';'
+  | TK_VAR identifier initializer ';'
   ;
 */
 static node_t *variable_declaration(parser_t *p)
 {
-  node_t *node = NULL;
-#if 0
-  node_t *init_expr = NULL;
-  Symbol *symbol = NULL;
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
+  node_t *expr = NULL;
 
-  if (!expect(p, TK_VAR)) {
-    return NULL;
-  }
+  assert_next(p, TK_VAR);
 
   if (!expect(p, TK_IDENTIFIER)) {
-    parse_error(p, "missing variable name after 'var'");
-    skip_until(p, ';');
-    return NULL;
   }
-  symbol = new_symbol(p, SYM_VAR);
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
 
-  if (!expect(p, ':')) {
-    parse_error(p, "missing ':' after variable name");
-    skip_until(p, ';');
-    return NULL;
+  if (next(p, TK_INT)) {
   }
 
-  symbol->data_type = type_specifier(p);
-  if (symbol->data_type == TYPE_NONE) {
-    parse_error(p, "missing type name after ':'");
-    skip_until(p, ';');
-    return NULL;
-  }
-
-  if (peek_next_token(p) == '=') {
-    get_next_token(p); /* read '=' */
-    init_expr = expression(p);
+  if (next(p, '=')) {
+    expr = expression(p);
   }
 
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end");
-    return NULL;
   }
 
-  node = AstNode_New(NODE_VAR_DECL);
-  node->value.symbol = symbol;
-  node->right = init_expr;
-#endif
-  return node;
+  return new_node(AST_VAR_DECL, ast_identifier(buf), expr);
+  /*
+  return ast_var_decl(expr);
+  */
 }
 
 /*
@@ -845,6 +818,7 @@ variable_declaration_list
   | variable_declaration variable_declaration_list
   ;
 */
+#if 0
 static node_t *variable_declaration_list(parser_t *p)
 {
   node_t *decl = variable_declaration(p);
@@ -855,6 +829,7 @@ static node_t *variable_declaration_list(parser_t *p)
 
   return list_node(decl, variable_declaration_list(p));
 }
+#endif
 
 /*
 statement_list
@@ -878,28 +853,15 @@ block_statement
 */
 static node_t *block_statement(parser_t *p)
 {
-  node_t *block = NULL;
-#if 0
-  node_t *decl_list = NULL;
   node_t *stmt_list = NULL;
 
   if (!expect(p, '{')) {
-    parse_error(p, "missing '{'");
-    skip_until(p, ';');
   }
-
-  decl_list = variable_declaration_list(p);
   stmt_list = statement_list(p);
 
   if (!expect(p, '}')) {
-    parse_error(p, "missing '}'");
   }
-
-  block = AstNode_New(NODE_BLOCK);
-  block->left  = decl_list;
-  block->right = stmt_list;
-#endif
-  return block;
+  return new_node(AST_COMPOUND, stmt_list, NULL);
 }
 
 /*
@@ -912,10 +874,8 @@ static node_t *break_statement(parser_t *p)
   node_t *stmt = NULL;
 
   assert_next(p, TK_BREAK);
-  stmt = new_node(AST_BREAK);
+  stmt = new_node(AST_BREAK, NULL, NULL);
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of break statement");
-    skip_until(p, ';');
   }
   return stmt;
 }
@@ -930,10 +890,8 @@ static node_t *continue_statement(parser_t *p)
   node_t *stmt = NULL;
 
   assert_next(p, TK_CONTINUE);
-  stmt = new_node(AST_CONTINUE);
+  stmt = new_node(AST_CONTINUE, NULL, NULL);
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of continue statement");
-    skip_until(p, ';');
   }
   return stmt;
 }
@@ -946,22 +904,18 @@ return_statement
 */
 static node_t *return_statement(parser_t *p)
 {
-  node_t *stmt_return = NULL;
+  node_t *stmt = NULL;
 
   assert_next(p, TK_RETURN);
-  stmt_return = new_node(AST_RETURN);
-  if (expect(p, ';')) {
-    return stmt_return;
+  stmt = new_node(AST_RETURN, NULL, NULL);
+  if (next(p, ';')) {
+    return stmt;
   }
-#if 0
-  stmt_return->left = expression(p);
 
+  stmt->lnode = expression(p);
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of return statement");
-    skip_until(p, ';');
   }
-#endif
-  return stmt_return;
+  return stmt;
 }
 
 /*
@@ -972,35 +926,25 @@ if_statement
 */
 static node_t *if_statement(parser_t *p)
 {
-#if 0
   node_t *expr = NULL;
-  node_t *cond = NULL;
-  node_t *next = NULL;
+  node_t *then = NULL;
 
-  assert_next_token(p, TK_IF);
+  assert_next(p, TK_IF);
 
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after 'if'");
-    skip_until(p, ')');
   }
-
   expr = expression(p);
 
   if (!expect(p, ')')) {
-    parse_error(p, "missing ')' after conditional expression");
-    skip_until(p, '{');
-    put_back_token(p);
   }
 
-  cond = new_node(NODE_COND, expr, statement(p));
+  then = new_node(AST_THEN, statement(p), NULL);
 
   if (expect(p, TK_ELSE)) {
-    next = statement(p);
+    then->rnode = statement(p);
   }
 
-  return new_node(NODE_IF, cond, next);
-#endif
-  return NULL;
+  return new_node(AST_IF, expr, then);
 }
 
 /*
@@ -1120,25 +1064,46 @@ static node_t *switch_statement(parser_t *p)
 
 /*
 for_statement
-  : TK_FOR '(' expression ';' expression ';' expression ')' statement
+  : TK_FOR '(' statement expression ';' statement ')' statement
   ;
 */
 static node_t *for_statement(parser_t *p)
 {
-#if 0
   node_t *init = NULL;
   node_t *cond = NULL;
   node_t *expr = NULL;
-  node_t *loop = NULL;
+  node_t *body = NULL;
   node_t *iter = NULL;
+  printf("for(\n");
 
-  assert_next_token(p, TK_FOR);
+  assert_next(p, TK_FOR);
 
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after 'for'");
-    skip_until(p, ')');
   }
 
+  if (peek_token(p) == TK_VAR) {
+    init = statement(p);
+  } else {
+    init = expression_statement(p);
+  }
+  if (init == NULL) {
+    syntax_error(p, "missing statement");
+  }
+
+  expr = expression_statement(p);
+  if (expr == NULL) {
+    syntax_error(p, "missing statement");
+  }
+
+  iter = expression(p);
+  if (!expect(p, ')')) {
+  }
+
+  body = new_node(AST_FOR_BODY, iter, statement(p));
+  cond = new_node(AST_FOR_COND, expr, body);
+
+  return new_node(AST_FOR_INIT, init, cond);
+#if 0
   if (!expect(p, ';')) {
     init = expression(p);
     if (!expect(p, ';')) {
@@ -1164,12 +1129,8 @@ static node_t *for_statement(parser_t *p)
     }
   }
 
-  loop = new_node(NODE_FOR_LOOP, iter, statement(p));
-  cond = new_node(NODE_FOR_COND, expr, loop);
-
-  return new_node(NODE_FOR_INIT, init, cond);
-#endif
   return NULL;
+#endif
 }
 
 /*
@@ -1179,30 +1140,18 @@ while_statement
 */
 static node_t *while_statement(parser_t *p)
 {
-#if 0
   node_t *expr = NULL;
   node_t *stmt = NULL;
 
-  assert_next_token(p, TK_WHILE);
-
+  assert_next(p, TK_WHILE);
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after 'while'");
-    skip_until(p, ')');
   }
-
   expr = expression(p);
-
   if (!expect(p, ')')) {
-    parse_error(p, "missing ')' after conditional expression");
-    skip_until(p, '{');
-    put_back_token(p);
   }
 
   stmt = statement(p);
-
-  return new_node(NODE_WHILE, expr, stmt);
-#endif
-  return NULL;
+  return new_node(AST_WHILE, expr, stmt);
 }
 
 /*
@@ -1212,62 +1161,25 @@ do_while_statement
 */
 static node_t *do_while_statement(parser_t *p)
 {
-#if 0
   node_t *expr = NULL;
   node_t *stmt = NULL;
 
-  assert_next_token(p, TK_DO);
+  assert_next(p, TK_DO);
 
   stmt = statement(p);
-
   if (!expect(p, TK_WHILE)) {
-    parse_error(p, "missing 'while' after statements");
-    skip_until(p, ';');
-    put_back_token(p);
   }
 
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after 'do'");
-    skip_until(p, ')');
   }
-
   expr = expression(p);
-
   if (!expect(p, ')')) {
-    parse_error(p, "missing ')' after conditional expression");
-    skip_until(p, ';');
-    put_back_token(p);
   }
 
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of 'do while' statement");
-    skip_until(p, ';');
   }
 
-  return new_node(NODE_DO_WHILE, stmt, expr);
-#endif
-  return NULL;
-}
-
-/*
-jump_statement
-  : TK_BREAK ';'
-  | TK_CONTINUE ';'
-  | TK_RETURN ';'
-  ;
-*/
-static node_t *jump_statement(parser_t *p)
-{
-  switch (peek_token(p)) {
-  case TK_BREAK:
-    return break_statement(p);
-  case TK_CONTINUE:
-    return continue_statement(p);
-  case TK_RETURN:
-    return return_statement(p);
-  default:
-    return NULL;
-  }
+  return new_node(AST_DO_WHILE, stmt, expr);
 }
 
 /*
@@ -1280,48 +1192,44 @@ statement
 */
 static node_t *statement(parser_t *p)
 {
-  node_t *stmt = NULL;
-
   switch (peek_token(p)) {
 
   /* selection statements */
   case TK_IF:
-    stmt = if_statement(p);
-    break;
+    return if_statement(p);
   case TK_SWITCH:
-    stmt = switch_statement(p);
-    break;
+    return switch_statement(p);
 
   /* iteration statements */
   case TK_FOR:
-    stmt = for_statement(p);
-    break;
+    return for_statement(p);
   case TK_WHILE:
-    stmt = while_statement(p);
-    break;
+    return while_statement(p);
   case TK_DO:
-    stmt = do_while_statement(p);
-    break;
+    return do_while_statement(p);
 
+  /* jump_statement */;
   case TK_BREAK:
+    return break_statement(p);
   case TK_CONTINUE:
+    return continue_statement(p);
+  case TK_GOTO:
+    return goto_statement(p);
   case TK_RETURN:
-    return jump_statement(p);
+    return return_statement(p);
 
+  case TK_VAR:
+    return variable_declaration(p);
 #if 0
-    stmt = goto_statement(p);
-    break;
-
   /* builtin operators */
   case TK_VARDUMP:
     stmt = vardump_statement(p);
     break;
 
+#endif
   /* labeled statements */
   case TK_LABEL:
-    stmt = labeled_statement(p);
-    break;
-#endif
+    return  labeled_statement(p);
 
   /*
   case TK_IDENTIFIER:
@@ -1331,22 +1239,17 @@ static node_t *statement(parser_t *p)
   case TK_IDENTIFIER:
   case TK_INC:
   case TK_DEC:
-    stmt = expression_statement(p);
-    break;
+    return expression_statement(p);
 
   case ';':
-    stmt = null_statement(p);
-    break;
+    return empty_statement(p);
 
   case '{':
-    stmt = block_statement(p);
-    break;
+    return block_statement(p);
 
   default:
     return NULL;
   }
-
-  return stmt;
 }
 
 /*
@@ -1432,57 +1335,6 @@ static node_t *function_definition(parser_t *p)
 }
 
 /* TODO ----------------------------------------------------------------- */
-
-#if 0
-/*
-variable_declaration
-  : TK_VAR identifier type ';'
-  | TK_VAR identifier [type] = expression ';'
-  ;
-*/
-static node_t *variable_declaration(parser_t *p)
-{
-  const token_t *tok = NULL;
-  node_t *expr = NULL;
-  assert_next(p, TK_VAR);
-
-  tok = expect(p, TK_IDENTIFIER);
-  if (!tok) {
-    return NULL;
-  }
-  printf("%s ", word_value_of(tok));
-
-#if n
-  tok = get_token(p);
-  if (kind_of(tok) != TK_IDENT) {
-    return NULL;
-  }
-  printf("%s ", word_value_of(tok));
-#endif
-
-  if (is_next(p, TK_INT)) {
-  }
-
-  if (is_next(p, '=')) {
-    expr = expression(p);
-    printf("%ld", expr->ivalue);
-  }
-
-  tok = expect(p, ';');
-  if (!tok) {
-    return NULL;
-  }
-  printf(";\n");
-  /*
-  printf("%s ", word_value_of(tok));
-  if (expect(p, ';')) {
-    printf("\n");
-  }
-  */
-
-  return ast_var_decl(expr);
-}
-#endif
 
 /*
 program

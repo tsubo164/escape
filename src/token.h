@@ -39,9 +39,10 @@ See LICENSE and README
   T(TK_FALSE, "false") \
   T(TK_FN, "fn") \
   T(TK_FOR, "for") \
-  T(TK_goto, "goto") \
+  T(TK_GOTO, "goto") \
   T(TK_IF, "if") \
   T(TK_INT, "int") \
+  T(TK_LABEL, "label") \
   T(TK_NULL, "null") \
   T(TK_RETURN, "return") \
   T(TK_STRUCT, "struct") \

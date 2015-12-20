@@ -24,7 +24,7 @@ static void save_tok(struct lexer *l, const struct token *tok)
   l->tokbuf[l->tokcurr] = *tok;
 }
 
-static struct token *load_tok(struct lexer *l)
+static const struct token *load_tok(const struct lexer *l)
 {
   return &l->tokbuf[l->tokcurr];
 }
@@ -494,6 +494,11 @@ const struct token *lex_unget_token(struct lexer *l)
     bwd_tokbuf(l);
   }
 
+  return load_tok(l);
+}
+
+const struct token *lex_current_token(const struct lexer *l)
+{
   return load_tok(l);
 }
 

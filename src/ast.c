@@ -9,10 +9,16 @@ See LICENSE and README
 
 typedef struct ast_node node_t;
 static void print_node_recursive(const node_t *node, int depth);
+static void print_c_recursive(const node_t *node, int depth);
 
 void ast_print_tree(const struct ast_node *node)
 {
   print_node_recursive(node, 0);
+}
+
+void print_c_code(const struct ast_node *node)
+{
+  print_c_recursive(node, 0);
 }
 
 static const struct {
@@ -33,18 +39,68 @@ static void print_node_recursive(const node_t *node, int depth)
   if (node == NULL) {
     return;
   }
+  for (i = 0; i < depth; i++) {
+    if (i == 0)
+      printf("  |");
+    else
+      printf("--|");
+  }
 
+  if (node->kind != AST_LIST) {
+
+    switch (node->kind) {
+    case AST_LITERAL:
+    case AST_SYMBOL:
+      printf("%s [%s]\n", ast_table[node->kind].string, node->value.word);
+      break;
+
+    default:
+      printf("%s\n", ast_table[node->kind].string);
+      break;
+    }
+    next_depth++;
+  } else {
+      /*
+      printf("%s\n", ast_table[node->kind].string);
+      */
+    printf("\n");
+  }
+
+  print_node_recursive(node->lnode, next_depth);
+  print_node_recursive(node->rnode, next_depth);
+}
+
+static void print_c_recursive(const node_t *node, int depth)
+{
+  int i;
+  int next_depth = depth;
+
+  if (node == NULL) {
+    return;
+  }
   for (i = 0; i < depth; i++) {
     printf("  ");
   }
 
-  if (node->kind != AST_LIST) {
-    printf("%s\n", ast_table[node->kind].string);
-    next_depth++;
+  switch (node->kind) {
+  case AST_VAR_DECL:
+    printf("%s ", node->value.word);
+    break;
+
+  case AST_LITERAL:
+  case AST_SYMBOL:
+    printf("%s ", node->value.word);
+    break;
+
+  default:
+    break;
   }
 
-  print_node_recursive(node->lnode, depth);
-  print_node_recursive(node->rnode, depth);
+  if (node->kind != AST_LIST) {
+    next_depth++;
+  }
+  print_c_recursive(node->lnode, next_depth);
+  print_c_recursive(node->rnode, next_depth);
 }
 
 #if 0

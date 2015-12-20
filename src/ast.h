@@ -7,10 +7,46 @@ See LICENSE and README
 #define AST_H
 
 #define AST_KIND_LIST(T) \
-  T(AST_LITERAL, "literal") \
+  T(AST_ASSIGN, "=") \
+  T(AST_OR, "||") \
+  T(AST_AND, "&&") \
+  T(AST_BITWISE_OR, "|") \
+  T(AST_BITWISE_XOR, "^") \
+  T(AST_BITWISE_AND, "&") \
+  T(AST_EQ, "==") \
+  T(AST_NE, "!=") \
+  T(AST_LT, "<") \
+  T(AST_GT, ">") \
+  T(AST_LE, "<=") \
+  T(AST_GE, ">=") \
+  T(AST_LSHIFT, "<<") \
+  T(AST_RSHIFT, ">>") \
+  T(AST_ADD, "+") \
+  T(AST_SUB, "-") \
+  T(AST_MUL, "*") \
+  T(AST_DIV, "/") \
+  T(AST_MOD, "%") \
+  T(AST_PRE_INC, "++()") \
+  T(AST_PRE_DEC, "--()") \
+  T(AST_POST_INC, "()++") \
+  T(AST_POST_DEC, "()--") \
+  T(AST_EMPTY_STMT, "empty_statement") \
+  T(AST_EXPR_STMT, "expression_statement") \
+  T(AST_IF, "if") \
+  T(AST_THEN, "then") \
+  T(AST_FOR_INIT, "for") \
+  T(AST_FOR_COND, "cond") \
+  T(AST_FOR_BODY, "body") \
+  T(AST_WHILE, "while") \
+  T(AST_DO_WHILE, "do_while") \
+  T(AST_COMPOUND, "compound") \
   T(AST_LIST, "list") \
+  T(AST_LITERAL, "literal") \
+  T(AST_LABEL, "label") \
+  T(AST_SYMBOL, "symbol") \
   T(AST_BREAK, "break") \
   T(AST_CONTINUE, "continue") \
+  T(AST_GOTO, "goto") \
   T(AST_RETURN, "return") \
   T(AST_VAR_DECL, "var_decl")
 
@@ -28,22 +64,14 @@ struct ast_node {
 
   union {
     char word[128];
-    /* int literal */
-    long ivalue;
-    /* list */
-    struct {
-      struct ast_node *next;
-    };
-    /* var decl */
-    struct {
-      struct ast_node *init;
-    };
-  };
+  } value;
 };
 
 #define NODE_INIT {0,NULL,NULL}
 
 extern void ast_print_tree(const struct ast_node *node);
+
+extern void print_c_code(const struct ast_node *node);
 
 #if 0
 struct Symbol;
