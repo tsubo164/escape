@@ -120,9 +120,9 @@ node_t *ast_var_decl(node_t *init)
 }
 
 /* TODO ----------------------------------------------------------------- */
+#if 0
 static void parse_error(parser_t *p, const char *detail)
 {
-#if 0
   ErrorInfo *info = NULL;
 
   if (p->error_count >= Parser_GetMaxErrorInfo(p)) {
@@ -135,8 +135,8 @@ static void parse_error(parser_t *p, const char *detail)
   info->detail = detail;
 
   p->error_count++;
-#endif
 }
+#endif
 
 /* -------------------------------------------------------------------------- */
 #if 0
@@ -210,12 +210,14 @@ static int get_next_token(parser_t *p)
 }
 #endif
 
+#if 0
 static void skip_until(parser_t *p, int until_tag)
 {
   while (kind_of(get_token(p)) != until_tag) {
     /* do nothing */
   }
 }
+#endif
 
 static int peek_token(parser_t *p)
 {
@@ -241,21 +243,21 @@ static Symbol *new_symbol(parser_t *p, int symbol_type)
 }
 #endif
 
-#if 0
-/* TODO TEST */
-typedef struct NodeList {
+/* to avoid too many recursive calls for just simple list like statement_list */
+typedef struct node_list {
   node_t *head;
   node_t *tail;
-} NodeList;
-#define LIST_INIT {NULL, NULL}
+} node_list_t;
+#define INIT_NODE_LIST {NULL, NULL}
 
-static node_t *append(NodeList *list, node_t *node)
+static node_t *append(node_list_t *list, node_t *node)
 {
   if (node == NULL) {
     return NULL;
   }
 
   if (list->tail == NULL) {
+    /* the first append */
     list->tail = list_node(node, NULL);
     list->head = list->tail;
   } else {
@@ -264,7 +266,6 @@ static node_t *append(NodeList *list, node_t *node)
   }
   return node;
 }
-#endif
 
 #if 0
 static DataType type_specifier(parser_t *p)
@@ -749,11 +750,11 @@ static node_t *goto_statement(parser_t *p)
 }
 
 /*
-labeled_statement
+label_statement
   : TK_LABEL identifier ':' statement
   ;
 */
-static node_t *labeled_statement(parser_t *p)
+static node_t *label_statement(parser_t *p)
 {
   char buf[128] = {'\0'};
   const token_t *tok = NULL;
@@ -774,6 +775,34 @@ static node_t *labeled_statement(parser_t *p)
   }
 
   return new_node(AST_LABEL, ast_identifier(buf), stmt);
+}
+
+/*
+case_statement
+  : TK_CASE expression ':' statement
+  ;
+*/
+static node_t *case_statement(parser_t *p)
+{
+  node_t *expr = NULL;
+  node_t *stmt = NULL;
+
+  assert_next(p, TK_CASE);
+
+  expr = expression(p);
+  if (expr == NULL) {
+    syntax_error(p, "missing expression");
+  }
+
+  if (!expect(p, ':')) {
+  }
+
+  stmt = statement(p);
+  if (stmt == NULL) {
+    syntax_error(p, "case labeled with no statement");
+  }
+
+  return new_node(AST_CASE, expr, stmt);
 }
 
 /*
@@ -839,11 +868,20 @@ statement_list
 */
 static node_t *statement_list(parser_t *p)
 {
+#if 0
   node_t *stmt = statement(p);
   if (stmt == NULL) {
     return NULL;
   }
   return list_node(stmt, statement_list(p));
+#endif
+  node_list_t list = INIT_NODE_LIST;
+  for (;;) {
+    node_t *stmt = statement(p);
+    if (stmt == NULL) { break; }
+    append(&list, stmt);
+  }
+  return list.head;
 }
 
 /*
@@ -947,6 +985,7 @@ static node_t *if_statement(parser_t *p)
   return new_node(AST_IF, expr, then);
 }
 
+#if 0
 /*
 case_clause
   : TK_CASE expression ':' statement
@@ -956,7 +995,7 @@ case_clause
 static node_t *case_clause(parser_t *p)
 {
 #if 0
-  NodeList list = LIST_INIT;
+  NodeList list = INIT_NODE_LIST;
   node_t *expr = NULL;
 
   if (!expect(p, TK_CASE) && !expect(p, TK_DEFAULT)) {
@@ -1001,8 +1040,34 @@ case_clause_list
 */
 static node_t *case_clause_list(parser_t *p)
 {
+  node_t *clause = case_clause(p);
+  if (clause == NULL) {
+    return NULL;
+  }
+  return list_node(clause, case_clause_list(p));
 #if 0
-  NodeList list = LIST_INIT;
+  node_t *list = NULL;
+  node_t *tail = NULL;
+  node_t *clause = NULL;
+
+  clause = case_clause(p);
+  if (clause == NULL) {
+    return NULL;
+  }
+  list = list_node(clause, NULL);
+
+  for (;;) {
+    clause = case_clause(p);
+    if (clause == NULL) {
+      break;
+    }
+    tail->rnode = list_node(clause, NULL);
+    tail = tail->rnode;
+  }
+  return list;
+#endif
+#if 0
+  NodeList list = INIT_NODE_LIST;
 
   for (;;) {
     const int next = peek_next_token(p);
@@ -1018,48 +1083,32 @@ static node_t *case_clause_list(parser_t *p)
 #endif
   return NULL;
 }
+#endif
 
 /*
 switch_statement
-  : TK_SWITCH '(' expression ')' '{' case_clause_list '}'
+  : TK_SWITCH '(' expression ')' statement
   ;
 */
 static node_t *switch_statement(parser_t *p)
 {
-#if 0
   node_t *expr = NULL;
-  node_t *case_list = NULL;
+  node_t *stmt = NULL;
 
-  assert_next_token(p, TK_SWITCH);
-
+  assert_next(p, TK_SWITCH);
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after 'if'");
-    skip_until(p, ')');
   }
 
   expr = expression(p);
-
   if (!expect(p, ')')) {
-    parse_error(p, "missing ')' after conditional expression");
-    skip_until(p, '{');
-    put_back_token(p);
   }
 
-  if (!expect(p, '{')) {
-    parse_error(p, "missing '{' after 'switch' condition");
-    skip_until(p, ';');
+  stmt = statement(p);
+  if (stmt == NULL) {
+    syntax_error(p, "missing statement");
   }
 
-  case_list = case_clause_list(p);
-
-  if (!expect(p, '}')) {
-    parse_error(p, "missing '}' after 'switch' case clauses");
-    skip_until(p, ';');
-  }
-
-  return new_node(NODE_SWITCH, expr, case_list);
-#endif
-  return NULL;
+  return new_node(AST_SWITCH, expr, stmt);
 }
 
 /*
@@ -1229,7 +1278,9 @@ static node_t *statement(parser_t *p)
 #endif
   /* labeled statements */
   case TK_LABEL:
-    return  labeled_statement(p);
+    return  label_statement(p);
+  case TK_CASE:
+    return  case_statement(p);
 
   /*
   case TK_IDENTIFIER:
@@ -1271,19 +1322,10 @@ function_parameters
 static node_t *function_parameters(parser_t *p)
 {
   node_t *param_list = NULL;
-
   if (!expect(p, '(')) {
-    parse_error(p, "missing '(' after return type");
-    skip_until(p, ')');
-    return NULL;
   }
-
   if (!expect(p, ')')) {
-    parse_error(p, "missing ')' after parameter list");
-    skip_until(p, ')');
-    return NULL;
   }
-
   return param_list;
 }
 
@@ -1294,44 +1336,57 @@ function_definition
 */
 static node_t *function_definition(parser_t *p)
 {
-#if 0
   node_t *func_def = NULL;
-  Symbol *symbol = NULL;
 
-  assert_next_token(p, TK_FUNCTION);
-
+  assert_next(p, TK_FN);
   if (!expect(p, TK_IDENTIFIER)) {
-    parse_error(p, "missing function name after 'function'");
-    skip_until(p, ':');
-    put_back_token(p); /* put back ':' for function_parameters */
   }
 
-  symbol = SymbolTable_Add(
-      symbol_table(p),
-      token_name(p),
-      SYM_FUNCTION);
+  func_def = new_node(AST_FN_DEF, NULL, NULL);
+  func_def->lnode = function_parameters(p);
 
-  if (symbol == NULL) {
-    parse_error(p, "function already defined");
-    return NULL;
+  if (!expect(p, TK_INT)) {
   }
 
-  if (!expect(p, ':')) {
-    parse_error(p, "missing ':' after function name");
-    skip_until(p, '(');
-    return NULL;
-  }
-
-  symbol->data_type = type_specifier(p);
-
-  func_def = AstNode_New(NODE_FUNC_DEF);
-  func_def->left  = function_parameters(p);
-  func_def->right = function_body(p);
-  func_def->value.symbol = symbol;
-
+  func_def->rnode = function_body(p);
   return func_def;
+}
+
+/*
+external_declaration
+  : function_definition
+  | variable_declaration
+  ;
+*/
+#if 0
+static node_t *external_declaration(parser_t *p)
+{
+  switch (peek_token(p)) {
+  case TK_FN:  return function_definition(p);
+  case TK_VAR: return variable_declaration(p);
+  default: return NULL;
+  }
+}
 #endif
-  return NULL;
+
+/*
+external_declaration_list
+  : function_parameters
+  | function_parameters
+  ;
+*/
+static node_t *external_declaration_list(parser_t *p)
+{
+  node_list_t list = INIT_NODE_LIST;
+  node_t *decl = NULL;
+  for (;;) {
+    const int next = peek_token(p);
+    if      (next == TK_FN)  { decl = function_definition(p); }
+    else if (next == TK_VAR) { decl = variable_declaration(p); }
+    else { break; }
+    append(&list, decl);
+  }
+  return list.head;
 }
 
 /* TODO ----------------------------------------------------------------- */
@@ -1343,7 +1398,11 @@ program
 */
 static node_t *program(parser_t *p)
 {
+  return external_declaration_list(p);
+  /*
+  return function_definition(p);
   return statement_list(p);
+  */
 }
 
 int parse_file(struct parser *p, const char *filename)

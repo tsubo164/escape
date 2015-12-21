@@ -34,6 +34,7 @@ See LICENSE and README
   T(AST_EXPR_STMT, "expression_statement") \
   T(AST_IF, "if") \
   T(AST_THEN, "then") \
+  T(AST_SWITCH, "switch") \
   T(AST_FOR_INIT, "for") \
   T(AST_FOR_COND, "cond") \
   T(AST_FOR_BODY, "body") \
@@ -43,11 +44,13 @@ See LICENSE and README
   T(AST_LIST, "list") \
   T(AST_LITERAL, "literal") \
   T(AST_LABEL, "label") \
+  T(AST_CASE, "case") \
   T(AST_SYMBOL, "symbol") \
   T(AST_BREAK, "break") \
   T(AST_CONTINUE, "continue") \
   T(AST_GOTO, "goto") \
   T(AST_RETURN, "return") \
+  T(AST_FN_DEF, "fn_def") \
   T(AST_VAR_DECL, "var_decl")
 
 enum ast_kind {

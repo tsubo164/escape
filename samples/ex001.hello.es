@@ -4,6 +4,17 @@
  *   $ ./a.out
  */
 
+fn main() int
+{
+	//print("Hello, world!\n");
+	return 0;
+}
+
+var i = 0;
+var n int; // = 0
+var hoge int = 123;
+var foo int = (999111 + n) * hoge;
+
 break;
 continue;
 return;
@@ -68,6 +79,13 @@ if (a == 2) {
   b = c;
 }
 
+switch (a) {
+case 123: case 999:
+case 213: case 888:
+case 132: case 666:
+  break;
+}
+
 /*
 
 hoge;
@@ -76,6 +94,6 @@ hoge;
 
 fn main() int
 {
-	print("Hello, world!\n");
+	//print("Hello, world!\n");
 	return 0;
 }
