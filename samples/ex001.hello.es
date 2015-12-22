@@ -6,6 +6,8 @@
 
 fn main() int
 {
+  var a int;
+  vardump a;
 	//print("Hello, world!\n");
 	return 0;
 }
@@ -14,6 +16,8 @@ var i = 0;
 var n int; // = 0
 var hoge int = 123;
 var foo int = (999111 + n) * hoge;
+
+/*
 
 break;
 continue;
@@ -54,10 +58,6 @@ continue;
   var n int = 333;
   label a:
   return;
-  /*
-  n = 23.f * (2 + foo);
-  n = 23;
-  */
 }
 
 while (n < 10) {
@@ -86,14 +86,11 @@ case 132: case 666:
   break;
 }
 
-/*
-
-hoge;
-(hoge;)
-*/
 
 fn main() int
 {
 	//print("Hello, world!\n");
 	return 0;
 }
+
+*/

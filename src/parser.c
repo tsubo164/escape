@@ -14,7 +14,8 @@ typedef struct parser parser_t;
 
 static void syntax_error(parser_t *p, const char *msg)
 {
-  fprintf(stderr, "syntak error, %s\n", msg);
+  fprintf(stderr, "syntax error: %d, %s\n",
+        lex_get_line_num(&p->lex), msg);
   exit(1);
 }
 
@@ -692,40 +693,21 @@ vardump_statement
   : "vardump" identifier
   ;
 */
-#if 0
 static node_t *vardump_statement(parser_t *p)
 {
-  node_t *stmt = NULL;
-  Symbol *symbol = NULL;
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
 
-  assert_next_token(p, TK_VARDUMP);
-
+  assert_next(p, TK_VARDUMP);
   if (!expect(p, TK_IDENTIFIER)) {
-    parse_error(p, "missing identifier after 'vardump'");
-    skip_until(p, ';');
-    return AstNode_New(NODE_NULL);
   }
-
-  symbol = SymbolTable_Lookup(
-      symbol_table(p),
-      token_name(p));
-
-  if (symbol == NULL) {
-    parse_error(p, "undefined variable specified for 'vardump'");
-    skip_until(p, ';');
-    return AstNode_New(NODE_NULL);
-  }
-
-  stmt = AstNode_New(NODE_VARDUMP);
-  stmt->value.symbol = symbol;
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
 
   if (!expect(p, ';')) {
-    parse_error(p, "missing ';' at the end of vardump statement");
-    skip_until(p, ';');
   }
-  return stmt;
+  return new_node(AST_VARDUMP, ast_identifier(buf), NULL);
 }
-#endif
 
 /*
 goto_statement
@@ -745,7 +727,6 @@ static node_t *goto_statement(parser_t *p)
 
   if (!expect(p, ';')) {
   }
-
   return new_node(AST_GOTO, ast_identifier(buf), NULL);
 }
 
@@ -1123,7 +1104,6 @@ static node_t *for_statement(parser_t *p)
   node_t *expr = NULL;
   node_t *body = NULL;
   node_t *iter = NULL;
-  printf("for(\n");
 
   assert_next(p, TK_FOR);
 
@@ -1257,7 +1237,7 @@ static node_t *statement(parser_t *p)
   case TK_DO:
     return do_while_statement(p);
 
-  /* jump_statement */;
+  /* jump statements */
   case TK_BREAK:
     return break_statement(p);
   case TK_CONTINUE:
@@ -1267,30 +1247,25 @@ static node_t *statement(parser_t *p)
   case TK_RETURN:
     return return_statement(p);
 
+  /* declaration statements */
   case TK_VAR:
     return variable_declaration(p);
-#if 0
-  /* builtin operators */
-  case TK_VARDUMP:
-    stmt = vardump_statement(p);
-    break;
 
-#endif
   /* labeled statements */
   case TK_LABEL:
-    return  label_statement(p);
+    return label_statement(p);
   case TK_CASE:
-    return  case_statement(p);
+    return case_statement(p);
 
-  /*
-  case TK_IDENTIFIER:
-    stmt = assignment_or_function_call(p);
-    break;
-  */
+  /* expression statements */
   case TK_IDENTIFIER:
   case TK_INC:
   case TK_DEC:
     return expression_statement(p);
+
+  /* builtin operators */
+  case TK_VARDUMP:
+    return vardump_statement(p);
 
   case ';':
     return empty_statement(p);
@@ -1358,16 +1333,18 @@ external_declaration
   | variable_declaration
   ;
 */
-#if 0
 static node_t *external_declaration(parser_t *p)
 {
   switch (peek_token(p)) {
   case TK_FN:  return function_definition(p);
   case TK_VAR: return variable_declaration(p);
-  default: return NULL;
+  case TK_EOS: return NULL;
+  default:
+    printf("[%s]\n", kind_to_string(kind_of(current_token(p))));
+    syntax_error(p, "unexpected declaration");
+    return NULL;
   }
 }
-#endif
 
 /*
 external_declaration_list
@@ -1378,12 +1355,9 @@ external_declaration_list
 static node_t *external_declaration_list(parser_t *p)
 {
   node_list_t list = INIT_NODE_LIST;
-  node_t *decl = NULL;
   for (;;) {
-    const int next = peek_token(p);
-    if      (next == TK_FN)  { decl = function_definition(p); }
-    else if (next == TK_VAR) { decl = variable_declaration(p); }
-    else { break; }
+    node_t *decl = external_declaration(p);
+    if (decl == NULL) { break; }
     append(&list, decl);
   }
   return list.head;
@@ -1412,7 +1386,6 @@ int parse_file(struct parser *p, const char *filename)
   lex_input_file(&p->lex, filename);
   node = program(p);
 
-  printf("PARSING DONE\n\n");
   ast_print_tree(node);
 
   return 0;

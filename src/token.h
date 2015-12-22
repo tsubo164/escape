@@ -49,7 +49,8 @@ See LICENSE and README
   T(TK_SWITCH, "switch") \
   T(TK_TRUE, "true") \
   T(TK_VAR, "var") \
-  T(TK_WHILE, "while")
+  T(TK_WHILE, "while") \
+  T(TK_VARDUMP, "vardump")
 
 enum token_kind {
   TK_BEGIN = 256,
