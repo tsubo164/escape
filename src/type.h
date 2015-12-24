@@ -8,6 +8,9 @@ See LICENSE and README
 
 #define TYPE_KIND_LIST(T) \
   T(TYPE_UNKNOWN, "unknown") \
+  T(TYPE_BOOL, "bool") \
+  T(TYPE_CHAR, "char") \
+  T(TYPE_SHORT, "short") \
   T(TYPE_INT, "int") \
   T(TYPE_LONG, "long") \
   T(TYPE_FLOAT, "float") \

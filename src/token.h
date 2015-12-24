@@ -25,12 +25,14 @@ See LICENSE and README
   T(TK_OR, "||") \
   T(TK_NUMBER, "number") \
   T(TK_IDENTIFIER, "identifier") \
+  T(TK_STRING_LITERAL, "string_literal") \
   T(TK_EOS, "EOS")
 
 #define KEYWORD_LIST(T) \
   T(TK_BOOL, "bool") \
   T(TK_BREAK, "break") \
   T(TK_CASE, "case") \
+  T(TK_CHAR, "char") \
   T(TK_CONTINUE, "continue") \
   T(TK_DEFAULT, "default") \
   T(TK_DO, "do") \
@@ -48,6 +50,8 @@ See LICENSE and README
   T(TK_LONG, "long") \
   T(TK_NULL, "null") \
   T(TK_RETURN, "return") \
+  T(TK_SHORT, "short") \
+  T(TK_STRING, "string") \
   T(TK_STRUCT, "struct") \
   T(TK_SWITCH, "switch") \
   T(TK_TRUE, "true") \
@@ -71,6 +75,7 @@ struct token {
   union {
     long Integer;
     double Float;
+    const char *String;
     char word[TOKEN_MAX_WORD_SIZE];
   } value;
 };
@@ -81,6 +86,7 @@ extern int kind_of(const struct token *tok);
 extern int int_value_of(const struct token *tok);
 extern float float_value_of(const struct token *tok);
 extern const char *word_value_of(const struct token *tok);
+extern const char *string_value_of(const struct token *tok);
 
 extern const char *kind_to_string(int kind);
 

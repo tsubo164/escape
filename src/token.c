@@ -27,6 +27,11 @@ const char *word_value_of(const struct token *tok)
   return tok->value.word;
 }
 
+const char *string_value_of(const struct token *tok)
+{
+  return tok->value.String;
+}
+
 static const char *ascii2str[] = {
 "NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "HT",
 "LF", "VT", "FF", "CR", "SO", "SI", "DLE", "DC1", "DC2", "DC3",

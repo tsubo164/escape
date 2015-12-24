@@ -56,8 +56,11 @@ static int expect(parser_t *p, int kind)
   if (kind_of(tok) == kind) {
     return 1;
   } else {
-    fprintf(stderr, "syntak error: %d, expected '%s' but got '%s'.\n",
-        lex_get_line_num(&p->lex), kind_to_string(kind), kind_to_string(tok->kind));
+    fprintf(stderr, "syntak error: %d, expected '%s' but got '%s' [%s].\n",
+        lex_get_line_num(&p->lex),
+        kind_to_string(kind),
+        kind_to_string(tok->kind),
+        word_value_of(tok));
     exit(1);
     return 0;
   }
@@ -114,6 +117,19 @@ static node_t *identifier(parser_t *p)
   id = new_node(AST_SYMBOL, NULL, NULL);
   id->value.symbol = make_symbol(p);
   return id;
+}
+
+node_t *string_literal(parser_t *p)
+{
+  const token_t *tok = NULL;
+  node_t *sl = NULL;
+  if (!expect(p, TK_STRING_LITERAL)) {
+    return NULL;
+  }
+  tok = current_token(p);
+  sl = new_node(AST_STRING_LITERAL, NULL, NULL);
+  sl->value.symbol = add_symbol(p->symtbl, string_value_of(tok), SYM_STRING_LITERAL);
+  return sl;
 }
 
 /* TODO ----------------------------------------------------------------- */
@@ -254,6 +270,15 @@ static int type_specifier(parser_t *p)
   const token_t *tok = get_token(p);
 
   switch (kind_of(tok)) {
+  case TK_BOOL:
+    type = TYPE_BOOL;
+    break;
+  case TK_CHAR:
+    type = TYPE_CHAR;
+    break;
+  case TK_SHORT:
+    type = TYPE_SHORT;
+    break;
   case TK_INT:
     type = TYPE_INT;
     break;
@@ -265,6 +290,9 @@ static int type_specifier(parser_t *p)
     break;
   case TK_DOUBLE:
     type = TYPE_DOUBLE;
+    break;
+  case TK_STRING:
+    type = TYPE_STRING;
     break;
   default:
     unget_token(p);
@@ -349,6 +377,10 @@ static node_t *primary_expression(parser_t *p)
 #endif
     unget_token(p);
     return identifier(p);
+
+  case TK_STRING_LITERAL:
+    unget_token(p);
+    return string_literal(p);
 
   case '(':
     node = expression(p);

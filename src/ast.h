@@ -34,6 +34,7 @@ See LICENSE and README
   T(AST_POST_DEC, "()--") \
   T(AST_LIST, "list") \
   T(AST_LITERAL, "literal") \
+  T(AST_STRING_LITERAL, "string_literal") \
   T(AST_EMPTY_STMT, "empty_statement") \
   T(AST_EXPR_STMT, "expression_statement") \
   T(AST_IF, "if") \

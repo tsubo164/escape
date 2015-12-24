@@ -11,16 +11,17 @@ See LICENSE and README
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct context context_t;
 typedef struct ast_node node_t;
 
-static void print_code_recursive(const node_t *node, context_t *cxt);
+static void print_code_recursive(FILE *fp, const node_t *node, context_t *cxt);
 
-void print_c_code(const node_t *node, context_t *cxt)
+void print_c_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  printf("#include <stdio.h>\n");
-  print_code_recursive(node, cxt);
+  fprintf(fp, "#include <stdio.h>\n");
+  print_code_recursive(fp, node, cxt);
 }
 
 /*
@@ -90,758 +91,753 @@ int main(int argc, const char **argv)
 }
 */
 
-static void indent(context_t *cxt)
+static void indent(FILE *fp, context_t *cxt)
 {
 	int i;
 	for (i = 0; i < cxt->depth; i++) {
-		printf("  ");
+		fprintf(fp, "  ");
 	}
 }
 
 /* AST_POST_INC */
-static void AST_POST_INC_pre_code(const node_t *node, context_t *cxt)
+static void AST_POST_INC_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("((");
+	fprintf(fp, "((");
 }
-static void AST_POST_INC_in_code(const node_t *node, context_t *cxt)
+static void AST_POST_INC_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_POST_INC_post_code(const node_t *node, context_t *cxt)
+static void AST_POST_INC_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")++)");
+	fprintf(fp, ")++)");
 }
 
 /* AST_POST_DEC */
-static void AST_POST_DEC_pre_code(const node_t *node, context_t *cxt)
+static void AST_POST_DEC_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("((");
+	fprintf(fp, "((");
 }
-static void AST_POST_DEC_in_code(const node_t *node, context_t *cxt)
+static void AST_POST_DEC_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_POST_DEC_post_code(const node_t *node, context_t *cxt)
+static void AST_POST_DEC_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")--)");
+	fprintf(fp, ")--)");
 }
 
 /* AST_PRE_INC */
-static void AST_PRE_INC_pre_code(const node_t *node, context_t *cxt)
+static void AST_PRE_INC_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_PRE_INC_in_code(const node_t *node, context_t *cxt)
+static void AST_PRE_INC_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("++(");
+	fprintf(fp, "++(");
 }
-static void AST_PRE_INC_post_code(const node_t *node, context_t *cxt)
+static void AST_PRE_INC_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("))");
+	fprintf(fp, "))");
 }
 
 /* AST_PRE_DEC */
-static void AST_PRE_DEC_pre_code(const node_t *node, context_t *cxt)
+static void AST_PRE_DEC_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_PRE_DEC_in_code(const node_t *node, context_t *cxt)
+static void AST_PRE_DEC_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("--(");
+	fprintf(fp, "--(");
 }
-static void AST_PRE_DEC_post_code(const node_t *node, context_t *cxt)
+static void AST_PRE_DEC_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("))");
+	fprintf(fp, "))");
 }
 
 /* AST_LSHIFT */
-static void AST_LSHIFT_pre_code(const node_t *node, context_t *cxt)
+static void AST_LSHIFT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_LSHIFT_in_code(const node_t *node, context_t *cxt)
+static void AST_LSHIFT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" << ");
+	fprintf(fp, " << ");
 }
-static void AST_LSHIFT_post_code(const node_t *node, context_t *cxt)
+static void AST_LSHIFT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_RSHIFT */
-static void AST_RSHIFT_pre_code(const node_t *node, context_t *cxt)
+static void AST_RSHIFT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_RSHIFT_in_code(const node_t *node, context_t *cxt)
+static void AST_RSHIFT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" >> ");
+	fprintf(fp, " >> ");
 }
-static void AST_RSHIFT_post_code(const node_t *node, context_t *cxt)
+static void AST_RSHIFT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_LT */
-static void AST_LT_pre_code(const node_t *node, context_t *cxt)
+static void AST_LT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_LT_in_code(const node_t *node, context_t *cxt)
+static void AST_LT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" < ");
+	fprintf(fp, " < ");
 }
-static void AST_LT_post_code(const node_t *node, context_t *cxt)
+static void AST_LT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_GT */
-static void AST_GT_pre_code(const node_t *node, context_t *cxt)
+static void AST_GT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_GT_in_code(const node_t *node, context_t *cxt)
+static void AST_GT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" > ");
+	fprintf(fp, " > ");
 }
-static void AST_GT_post_code(const node_t *node, context_t *cxt)
+static void AST_GT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_LE */
-static void AST_LE_pre_code(const node_t *node, context_t *cxt)
+static void AST_LE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_LE_in_code(const node_t *node, context_t *cxt)
+static void AST_LE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" <= ");
+	fprintf(fp, " <= ");
 }
-static void AST_LE_post_code(const node_t *node, context_t *cxt)
+static void AST_LE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_GE */
-static void AST_GE_pre_code(const node_t *node, context_t *cxt)
+static void AST_GE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_GE_in_code(const node_t *node, context_t *cxt)
+static void AST_GE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" >= ");
+	fprintf(fp, " >= ");
 }
-static void AST_GE_post_code(const node_t *node, context_t *cxt)
+static void AST_GE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_EQ */
-static void AST_EQ_pre_code(const node_t *node, context_t *cxt)
+static void AST_EQ_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_EQ_in_code(const node_t *node, context_t *cxt)
+static void AST_EQ_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" == ");
+	fprintf(fp, " == ");
 }
-static void AST_EQ_post_code(const node_t *node, context_t *cxt)
+static void AST_EQ_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_NE */
-static void AST_NE_pre_code(const node_t *node, context_t *cxt)
+static void AST_NE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_NE_in_code(const node_t *node, context_t *cxt)
+static void AST_NE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" != ");
+	fprintf(fp, " != ");
 }
-static void AST_NE_post_code(const node_t *node, context_t *cxt)
+static void AST_NE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_BITWISE_AND */
-static void AST_BITWISE_AND_pre_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_AND_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_BITWISE_AND_in_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_AND_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" & ");
+	fprintf(fp, " & ");
 }
-static void AST_BITWISE_AND_post_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_AND_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_BITWISE_XOR */
-static void AST_BITWISE_XOR_pre_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_XOR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_BITWISE_XOR_in_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_XOR_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" ^ ");
+	fprintf(fp, " ^ ");
 }
-static void AST_BITWISE_XOR_post_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_XOR_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_BITWISE_OR */
-static void AST_BITWISE_OR_pre_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_OR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_BITWISE_OR_in_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_OR_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" | ");
+	fprintf(fp, " | ");
 }
-static void AST_BITWISE_OR_post_code(const node_t *node, context_t *cxt)
+static void AST_BITWISE_OR_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_OR */
-static void AST_OR_pre_code(const node_t *node, context_t *cxt)
+static void AST_OR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_OR_in_code(const node_t *node, context_t *cxt)
+static void AST_OR_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" || ");
+	fprintf(fp, " || ");
 }
-static void AST_OR_post_code(const node_t *node, context_t *cxt)
+static void AST_OR_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_AND */
-static void AST_AND_pre_code(const node_t *node, context_t *cxt)
+static void AST_AND_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_AND_in_code(const node_t *node, context_t *cxt)
+static void AST_AND_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" && ");
+	fprintf(fp, " && ");
 }
-static void AST_AND_post_code(const node_t *node, context_t *cxt)
+static void AST_AND_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_ADD */
-static void AST_ADD_pre_code(const node_t *node, context_t *cxt)
+static void AST_ADD_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_ADD_in_code(const node_t *node, context_t *cxt)
+static void AST_ADD_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" + ");
+	fprintf(fp, " + ");
 }
-static void AST_ADD_post_code(const node_t *node, context_t *cxt)
+static void AST_ADD_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_SUB */
-static void AST_SUB_pre_code(const node_t *node, context_t *cxt)
+static void AST_SUB_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_SUB_in_code(const node_t *node, context_t *cxt)
+static void AST_SUB_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" - ");
+	fprintf(fp, " - ");
 }
-static void AST_SUB_post_code(const node_t *node, context_t *cxt)
+static void AST_SUB_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_MUL */
-static void AST_MUL_pre_code(const node_t *node, context_t *cxt)
+static void AST_MUL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_MUL_in_code(const node_t *node, context_t *cxt)
+static void AST_MUL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" * ");
+	fprintf(fp, " * ");
 }
-static void AST_MUL_post_code(const node_t *node, context_t *cxt)
+static void AST_MUL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_DIV */
-static void AST_DIV_pre_code(const node_t *node, context_t *cxt)
+static void AST_DIV_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_DIV_in_code(const node_t *node, context_t *cxt)
+static void AST_DIV_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" / ");
+	fprintf(fp, " / ");
 }
-static void AST_DIV_post_code(const node_t *node, context_t *cxt)
+static void AST_DIV_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_MOD */
-static void AST_MOD_pre_code(const node_t *node, context_t *cxt)
+static void AST_MOD_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_MOD_in_code(const node_t *node, context_t *cxt)
+static void AST_MOD_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" %% ");
+	fprintf(fp, " %% ");
 }
-static void AST_MOD_post_code(const node_t *node, context_t *cxt)
+static void AST_MOD_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_ASSIGN */
-static void AST_ASSIGN_pre_code(const node_t *node, context_t *cxt)
+static void AST_ASSIGN_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("(");
+	fprintf(fp, "(");
 }
-static void AST_ASSIGN_in_code(const node_t *node, context_t *cxt)
+static void AST_ASSIGN_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" = ");
+	fprintf(fp, " = ");
 }
-static void AST_ASSIGN_post_code(const node_t *node, context_t *cxt)
+static void AST_ASSIGN_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 
 /* AST_CALL_EXPR */
 #if 0
-static void AST_CALL_EXPR_pre_code(const node_t *node, context_t *cxt)
+static void AST_CALL_EXPR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_CALL_EXPR_in_code(const node_t *node, context_t *cxt)
+static void AST_CALL_EXPR_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  printf("(");
+  fprintf(fp, "(");
 }
-static void AST_CALL_EXPR_post_code(const node_t *node, context_t *cxt)
+static void AST_CALL_EXPR_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")");
+	fprintf(fp, ")");
 }
 #endif
 
 /* AST_FN_DEF */
-static void AST_FN_DEF_pre_code(const node_t *node, context_t *cxt)
+static void AST_FN_DEF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 	const char *function_name = node->value.word;
-	printf("int %s(void", function_name);
+	fprintf(fp, "int %s(void", function_name);
 }
-static void AST_FN_DEF_in_code(const node_t *node, context_t *cxt)
+static void AST_FN_DEF_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")\n");
+	fprintf(fp, ")\n");
 }
-static void AST_FN_DEF_post_code(const node_t *node, context_t *cxt)
+static void AST_FN_DEF_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_LIST */
-static void AST_LIST_pre_code(const node_t *node, context_t *cxt)
+static void AST_LIST_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_LIST_in_code(const node_t *node, context_t *cxt)
+static void AST_LIST_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_LIST_post_code(const node_t *node, context_t *cxt)
+static void AST_LIST_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_LITERAL */
-static void AST_LITERAL_pre_code(const node_t *node, context_t *cxt)
+static void AST_LITERAL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  printf("%s", node->value.word);
+  if (isalpha(node->value.word[0]) && node->value.word[1] == '\0') {
+    fprintf(fp, "'%s'", node->value.word);
+  } else {
+    fprintf(fp, "%s", node->value.word);
+  }
 }
-static void AST_LITERAL_in_code(const node_t *node, context_t *cxt)
+static void AST_LITERAL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_LITERAL_post_code(const node_t *node, context_t *cxt)
+static void AST_LITERAL_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+
+/* AST_STRING_LITERAL */
+static void AST_STRING_LITERAL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+  fprintf(fp, "\"%s\"", symbol_name(node->value.symbol));
+}
+static void AST_STRING_LITERAL_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+static void AST_STRING_LITERAL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_EMPTY_STMT */
-static void AST_EMPTY_STMT_pre_code(const node_t *node, context_t *cxt)
+static void AST_EMPTY_STMT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
+  indent(fp, cxt);
 }
-static void AST_EMPTY_STMT_in_code(const node_t *node, context_t *cxt)
+static void AST_EMPTY_STMT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_EMPTY_STMT_post_code(const node_t *node, context_t *cxt)
+static void AST_EMPTY_STMT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_EXPR_STMT */
-static void AST_EXPR_STMT_pre_code(const node_t *node, context_t *cxt)
+static void AST_EXPR_STMT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
+  indent(fp, cxt);
 }
-static void AST_EXPR_STMT_in_code(const node_t *node, context_t *cxt)
+static void AST_EXPR_STMT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_EXPR_STMT_post_code(const node_t *node, context_t *cxt)
+static void AST_EXPR_STMT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_COMPOUND */
-static void AST_COMPOUND_pre_code(const node_t *node, context_t *cxt)
+static void AST_COMPOUND_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("{\n");
+  indent(fp, cxt);
+	fprintf(fp, "{\n");
   cxt->depth++;
 }
-static void AST_COMPOUND_in_code(const node_t *node, context_t *cxt)
+static void AST_COMPOUND_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_COMPOUND_post_code(const node_t *node, context_t *cxt)
+static void AST_COMPOUND_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   cxt->depth--;
-  indent(cxt);
-	printf("}\n");
+  indent(fp, cxt);
+	fprintf(fp, "}\n");
 }
 
 /* AST_BREAK */
-static void AST_BREAK_pre_code(const node_t *node, context_t *cxt)
+static void AST_BREAK_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("break");
+  indent(fp, cxt);
+	fprintf(fp, "break");
 }
-static void AST_BREAK_in_code(const node_t *node, context_t *cxt)
+static void AST_BREAK_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_BREAK_post_code(const node_t *node, context_t *cxt)
+static void AST_BREAK_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_CONTINUE */
-static void AST_CONTINUE_pre_code(const node_t *node, context_t *cxt)
+static void AST_CONTINUE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("continue");
+  indent(fp, cxt);
+	fprintf(fp, "continue");
 }
-static void AST_CONTINUE_in_code(const node_t *node, context_t *cxt)
+static void AST_CONTINUE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_CONTINUE_post_code(const node_t *node, context_t *cxt)
+static void AST_CONTINUE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_IF */
-static void AST_IF_pre_code(const node_t *node, context_t *cxt)
+static void AST_IF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("if (");
+  indent(fp, cxt);
+	fprintf(fp, "if (");
 }
-static void AST_IF_in_code(const node_t *node, context_t *cxt)
+static void AST_IF_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-  printf(") ");
+  indent(fp, cxt);
+  fprintf(fp, ") ");
 }
-static void AST_IF_post_code(const node_t *node, context_t *cxt)
+static void AST_IF_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_THEN */
-static void AST_THEN_pre_code(const node_t *node, context_t *cxt)
+static void AST_THEN_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_THEN_in_code(const node_t *node, context_t *cxt)
+static void AST_THEN_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   if (node->rnode != NULL) {
-    indent(cxt);
-    printf("else\n");
+    indent(fp, cxt);
+    fprintf(fp, "else\n");
   }
 }
-static void AST_THEN_post_code(const node_t *node, context_t *cxt)
+static void AST_THEN_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_SWITCH */
-static void AST_SWITCH_pre_code(const node_t *node, context_t *cxt)
+static void AST_SWITCH_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("switch (");
+  indent(fp, cxt);
+	fprintf(fp, "switch (");
 }
-static void AST_SWITCH_in_code(const node_t *node, context_t *cxt)
+static void AST_SWITCH_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  printf(")\n");
+  fprintf(fp, ")\n");
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_pre_code(node, cxt);
+    AST_COMPOUND_pre_code(fp, node, cxt);
   }
 }
-static void AST_SWITCH_post_code(const node_t *node, context_t *cxt)
+static void AST_SWITCH_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_post_code(node, cxt);
+    AST_COMPOUND_post_code(fp, node, cxt);
   }
 }
 
 /* AST_CASE */
-static void AST_CASE_pre_code(const node_t *node, context_t *cxt)
+static void AST_CASE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   cxt->depth--;
-  indent(cxt);
+  indent(fp, cxt);
   if (node->lnode != NULL) {
-    printf("case ");
+    fprintf(fp, "case ");
   } else {
-    printf("default");
+    fprintf(fp, "default");
   }
   cxt->depth++;
 }
-static void AST_CASE_in_code(const node_t *node, context_t *cxt)
+static void AST_CASE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(":\n");
+	fprintf(fp, ":\n");
 }
-static void AST_CASE_post_code(const node_t *node, context_t *cxt)
+static void AST_CASE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("break;\n");
+  indent(fp, cxt);
+	fprintf(fp, "break;\n");
 }
 
 /* AST_FOR_INIT */
-static void AST_FOR_INIT_pre_code(const node_t *node, context_t *cxt)
+static void AST_FOR_INIT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("for (");
+  indent(fp, cxt);
+	fprintf(fp, "for (");
 }
-static void AST_FOR_INIT_in_code(const node_t *node, context_t *cxt)
+static void AST_FOR_INIT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("; ");
+	fprintf(fp, "; ");
 }
-static void AST_FOR_INIT_post_code(const node_t *node, context_t *cxt)
+static void AST_FOR_INIT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_FOR_COND */
-static void AST_FOR_COND_pre_code(const node_t *node, context_t *cxt)
+static void AST_FOR_COND_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_FOR_COND_in_code(const node_t *node, context_t *cxt)
+static void AST_FOR_COND_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf("; ");
+	fprintf(fp, "; ");
 }
-static void AST_FOR_COND_post_code(const node_t *node, context_t *cxt)
+static void AST_FOR_COND_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_FOR_BODY */
-static void AST_FOR_BODY_pre_code(const node_t *node, context_t *cxt)
+static void AST_FOR_BODY_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_FOR_BODY_in_code(const node_t *node, context_t *cxt)
+static void AST_FOR_BODY_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")\n");
+	fprintf(fp, ")\n");
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_pre_code(node, cxt);
+    AST_COMPOUND_pre_code(fp, node, cxt);
   }
 }
-static void AST_FOR_BODY_post_code(const node_t *node, context_t *cxt)
+static void AST_FOR_BODY_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_post_code(node, cxt);
+    AST_COMPOUND_post_code(fp, node, cxt);
   }
 }
 
 /* AST_WHILE */
-static void AST_WHILE_pre_code(const node_t *node, context_t *cxt)
+static void AST_WHILE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("while (");
+  indent(fp, cxt);
+	fprintf(fp, "while (");
 }
-static void AST_WHILE_in_code(const node_t *node, context_t *cxt)
+static void AST_WHILE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(")\n");
+	fprintf(fp, ")\n");
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_pre_code(node, cxt);
+    AST_COMPOUND_pre_code(fp, node, cxt);
   }
 }
-static void AST_WHILE_post_code(const node_t *node, context_t *cxt)
+static void AST_WHILE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   if (node->rnode != NULL && node->rnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_post_code(node, cxt);
+    AST_COMPOUND_post_code(fp, node, cxt);
   }
 }
 
 /* AST_DO_WHILE */
-static void AST_DO_WHILE_pre_code(const node_t *node, context_t *cxt)
+static void AST_DO_WHILE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("do\n");
+  indent(fp, cxt);
+	fprintf(fp, "do\n");
   if (node->rnode != NULL && node->lnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_pre_code(node, cxt);
+    AST_COMPOUND_pre_code(fp, node, cxt);
   }
 }
-static void AST_DO_WHILE_in_code(const node_t *node, context_t *cxt)
+static void AST_DO_WHILE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   if (node->rnode != NULL && node->lnode->kind != AST_COMPOUND) {
-    AST_COMPOUND_post_code(node, cxt);
+    AST_COMPOUND_post_code(fp, node, cxt);
   }
-  indent(cxt);
-	printf("while (");
+  indent(fp, cxt);
+	fprintf(fp, "while (");
 }
-static void AST_DO_WHILE_post_code(const node_t *node, context_t *cxt)
+static void AST_DO_WHILE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(");\n");
+	fprintf(fp, ");\n");
 }
 
 /* AST_RETURN */
-static void AST_RETURN_pre_code(const node_t *node, context_t *cxt)
+static void AST_RETURN_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("return ");
+  indent(fp, cxt);
+	fprintf(fp, "return ");
 }
-static void AST_RETURN_in_code(const node_t *node, context_t *cxt)
+static void AST_RETURN_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_RETURN_post_code(const node_t *node, context_t *cxt)
+static void AST_RETURN_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_GOTO */
-static void AST_GOTO_pre_code(const node_t *node, context_t *cxt)
+static void AST_GOTO_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-	printf("goto ");
+  indent(fp, cxt);
+	fprintf(fp, "goto ");
 }
-static void AST_GOTO_in_code(const node_t *node, context_t *cxt)
+static void AST_GOTO_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
-static void AST_GOTO_post_code(const node_t *node, context_t *cxt)
+static void AST_GOTO_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_LABEL */
-static void AST_LABEL_pre_code(const node_t *node, context_t *cxt)
+static void AST_LABEL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   cxt->depth--;
-  indent(cxt);
+  indent(fp, cxt);
   cxt->depth++;
 }
-static void AST_LABEL_in_code(const node_t *node, context_t *cxt)
+static void AST_LABEL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(":\n");
+	fprintf(fp, ":\n");
 }
-static void AST_LABEL_post_code(const node_t *node, context_t *cxt)
+static void AST_LABEL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_SYMBOL */
-static void AST_SYMBOL_pre_code(const node_t *node, context_t *cxt)
+static void AST_SYMBOL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-    /*
-	if (strcmp(node->value.word, "print") == 0) {
-		printf("printf");
+	if (strcmp(symbol_name(node->value.symbol), "print") == 0) {
+		fprintf(fp, "printf");
 	} else {
-		printf("%s", node->value.word);
+    fprintf(fp, "%s", symbol_name(node->value.symbol));
 	}
-    */
-  printf("%s", symbol_name(node->value.symbol));
 }
-static void AST_SYMBOL_in_code(const node_t *node, context_t *cxt)
+static void AST_SYMBOL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_SYMBOL_post_code(const node_t *node, context_t *cxt)
+static void AST_SYMBOL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
 /* AST_VAR_DECL */
-static void AST_VAR_DECL_pre_code(const node_t *node, context_t *cxt)
+static void AST_VAR_DECL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   node_t *idnt = node->lnode;
   const int type = symbol_type(idnt->value.symbol);
 
-  indent(cxt);
-  printf("%s ", type_to_string(type));
-#if 0
-  const char *ctype_name = NULL;
-
-  switch (node->value.symbol->data_type) {
-  case TYPE_BOOL:
-  case TYPE_CHAR:
-    ctype_name = "char";
-    break;
-  case TYPE_SHORT:
-    ctype_name = "short";
-    break;
-  case TYPE_INT:
-    ctype_name = "int";
-    break;
-  case TYPE_LONG:
-    ctype_name = "long";
-    break;
-  case TYPE_FLOAT:
-    ctype_name = "float";
-    break;
-  case TYPE_DOUBLE:
-    ctype_name = "double";
-    break;
-  default:
-    ctype_name = "error!";
-    break;
-  }
-
-  indent(cxt);
-	printf("%s ", ctype_name);
-	printf("%s",  node->value.symbol->name);
-  if (node->rnode == NULL) {
-    printf(" = (%s) 0", ctype_name);
+  indent(fp, cxt);
+  if (type == TYPE_BOOL) {
+    fprintf(fp, "char ");
+  } else if (type == TYPE_STRING) {
+    fprintf(fp, "char *");
   } else {
-    printf(" = (%s) ", ctype_name);
+    fprintf(fp, "%s ", type_to_string(type));
   }
-#endif
 }
-static void AST_VAR_DECL_in_code(const node_t *node, context_t *cxt)
+static void AST_VAR_DECL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(" = ");
+	fprintf(fp, " = ");
 }
-static void AST_VAR_DECL_post_code(const node_t *node, context_t *cxt)
+static void AST_VAR_DECL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	printf(";\n");
+	fprintf(fp, ";\n");
 }
 
 /* AST_VARDUMP */
-static void AST_VARDUMP_pre_code(const node_t *node, context_t *cxt)
+static void AST_VARDUMP_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(cxt);
-  printf("printf(\"#  ");
+  indent(fp, cxt);
+  fprintf(fp, "printf(\"#  ");
 }
-static void AST_VARDUMP_in_code(const node_t *node, context_t *cxt)
+static void AST_VARDUMP_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
-static void AST_VARDUMP_post_code(const node_t *node, context_t *cxt)
+static void AST_VARDUMP_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   node_t *idnt = node->lnode;
   const int type = symbol_type(idnt->value.symbol);
   const char *name = symbol_name(idnt->value.symbol);
   const char *spec = "";
   switch (type) {
+  case TYPE_CHAR:
+    fprintf(fp, " => '%%c' (char)\\n\", %s);\n", name);
+    return;
+    break;
+  case TYPE_BOOL:
+    fprintf(fp, " => %%s (bool)\\n\", %s==0?\"false\":\"true\");\n", name);
+    return;
+    break;
+  case TYPE_SHORT:
   case TYPE_INT: spec = "%d"; break;
   case TYPE_LONG: spec = "%ld"; break;
   case TYPE_FLOAT:
   case TYPE_DOUBLE: spec = "%g"; break;
+  case TYPE_STRING:
+    fprintf(fp, " => \\\"%%s\\\" (string)\\n\", %s);\n", name);
+    return;
+    break;
   default: break;
   }
-  printf(" => %s (%s)\\n\", %s);\n", spec, type_to_string(type), name);
+  fprintf(fp, " => %s (%s)\\n\", %s);\n", spec, type_to_string(type), name);
 }
 
-typedef void (*WriteCode)(const node_t *node, context_t *cxt);
+typedef void (*WriteCode)(FILE *fp, const node_t *node, context_t *cxt);
 typedef struct ccode {
 	int ast_node_op;
 	WriteCode write_pre_code;
@@ -856,7 +852,7 @@ static const ccode_t ccodes[] = {
 };
 static const int N_CCODES = sizeof(ccodes)/sizeof(ccodes[0]);
 
-static void print_code_recursive(const node_t *node, context_t *cxt)
+static void print_code_recursive(FILE *fp, const node_t *node, context_t *cxt)
 {
 	const ccode_t *ccode = NULL;
 	int i;
@@ -873,18 +869,18 @@ static void print_code_recursive(const node_t *node, context_t *cxt)
 	}
 
 	if (ccode != NULL) {
-		ccode->write_pre_code(node, cxt);
+		ccode->write_pre_code(fp, node, cxt);
 	}
 
-	print_code_recursive(node->lnode, cxt);
+	print_code_recursive(fp, node->lnode, cxt);
 
 	if (ccode != NULL) {
-		ccode->write_in_code(node, cxt);
+		ccode->write_in_code(fp, node, cxt);
 	}
 
-	print_code_recursive(node->rnode, cxt);
+	print_code_recursive(fp, node->rnode, cxt);
 
 	if (ccode != NULL) {
-		ccode->write_post_code(node, cxt);
+		ccode->write_post_code(fp, node, cxt);
 	}
 }

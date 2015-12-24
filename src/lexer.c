@@ -110,6 +110,7 @@ static char scan_number(struct lexer *l, struct token *tok)
   char c = '\0';
   char prev = c;
   int has_e = 0;
+  int has_x = 0;
   int has_pm = 0;
   int has_dot = 0;
 
@@ -125,6 +126,10 @@ static char scan_number(struct lexer *l, struct token *tok)
 
     if (isdigit(c)) {
       *dst++ = prev = c;
+    }
+    else if (toupper(c)=='X' && prev=='0' && has_x==0) {
+      *dst++ = prev = c;
+      has_x = 1;
     }
     else if (toupper(c)=='E' && prev!='.' && has_e==0) {
       *dst++ = prev = c;
@@ -224,6 +229,9 @@ state_initial:
 }
 #endif
 
+static char strbuf[1024] = {'\0'};
+static int ci = 0;
+
 static int read_token(struct lexer *l, struct token *tok)
 {
   char ch = '\0';
@@ -244,6 +252,23 @@ state_initial:
   case '\0':
     tok->kind = TK_EOS;
     goto state_final;
+
+  case '\'':
+    ch = get_ch(l);
+    if (get_ch(l) == '\'') {
+      tok->kind = TK_NUMBER;
+      tok->value.word[0] = ch;
+      tok->value.word[1] = '\0';
+      goto state_final;
+    } else {
+      ch = unget_ch(l);
+      tok->kind = ch;
+      goto state_final;
+    }
+
+  case '"':
+    ci = 0;
+    goto state_string_literal;
 
   case '+':
     ch = get_ch(l);
@@ -405,6 +430,19 @@ state_initial:
   default:
     tok->kind = ch;
     goto state_final;
+  }
+
+state_string_literal:
+  ch = get_ch(l);
+  switch (ch) {
+  case '"':
+    tok->kind = TK_STRING_LITERAL;
+    strbuf[ci] = '\0';
+    tok->value.String = strbuf;
+    goto state_final;
+  default:
+    strbuf[ci++] = ch;
+    goto state_string_literal;
   }
 
 state_block_comment:
