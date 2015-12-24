@@ -9,13 +9,13 @@ See LICENSE and README
 #include <stdlib.h>
 
 /* force type to avoid missing sizeof mulptiplication */
-#define MEM_ALLOC_ARRAY(type,nelems) ((type*) malloc(sizeof(type) * (nelems)))
+#define MEMORY_ALLOC_ARRAY(type,nelems) ((type*) malloc(sizeof(type) * (nelems)))
 
 /* for single object */
-#define MEM_ALLOC(type) (MEM_ALLOC_ARRAY(type, 1))
+#define MEMORY_ALLOC(type) (MEMORY_ALLOC_ARRAY(type, 1))
 
-#define MEM_REALLOC_ARRAY(ptr,type,nelems) ((type*) realloc((ptr), sizeof(type) * (nelems)))
+#define MEMORY_REALLOC_ARRAY(ptr,type,nelems) ((type*) realloc((ptr), sizeof(type) * (nelems)))
 
-#define MEM_FREE(ptr) (free((ptr)))
+#define MEMORY_FREE(ptr) (free((ptr)))
 
 #endif /* XXX_H */

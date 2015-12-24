@@ -50,7 +50,7 @@ int open_string_stream(struct stream *s, const char *string)
   const size_t len = strlen(string);
 
   strm.type = STREAM_STRING;
-  strm.text = MEM_ALLOC_ARRAY(char, len + 1);
+  strm.text = MEMORY_ALLOC_ARRAY(char, len + 1);
   strncpy(strm.text, string, len + 1);
 
   *s = strm;
@@ -78,7 +78,7 @@ void close_stream(struct stream *s)
     fclose(s->file);
 
   if (s->text != NULL)
-    MEM_FREE(s->text);
+    MEMORY_FREE(s->text);
 }
 
 char stream_getc(struct stream *s)

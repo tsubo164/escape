@@ -6,41 +6,29 @@ See LICENSE and README
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
-#include "datatype.h"
+#include "type.h"
 
-enum SymbolType {
+enum symbol_kind {
 	SYM_NONE = 0,
+	SYM_VAR,
 	SYM_CONST,
 	SYM_FUNCTION,
 	SYM_LABEL,
-	SYM_STRING_LITERAL,
-	SYM_VAR
+	SYM_STRING_LITERAL
 };
 
-struct Symbol {
+struct symbol {
 	char *name;
-	int type;
-
-	/* TODO TEST */
-	DataType data_type;
+	int kind;
+  int type;
 };
+#define INIT_SYMBOL {NULL, 0, 0};
 
-struct SymbolTable;
+extern struct symbol_table *new_symbol_table(void);
+extern void free_symbol_table(struct symbol_table *table);
 
-extern struct SymbolTable *SymbolTable_New(void);
-extern void SymbolTable_Free(struct SymbolTable *table);
-
-extern struct Symbol *SymbolTable_Lookup(struct SymbolTable *table, const char *key);
-extern struct Symbol *SymbolTable_Add(struct SymbolTable *table,
-		const char *name, int type);
-
-extern struct Symbol *SymTableLookup(
-		struct SymbolTable *table,
-		const char *key);
-
-extern struct Symbol *SymTableAddFunction(
-		struct SymbolTable *table,
-		const char *function_name);
+extern struct symbol *lookup_symbol(struct symbol_table *table, const char *key);
+extern struct symbol *add_symbol(struct symbol_table *table,
+		const char *name, int kind);
 
 #endif /* XXX_H */
-

@@ -8,7 +8,7 @@ See LICENSE and README
 
 #include <stdio.h>
 
-#define TOKEN_LIST(T) \
+#define TOKEN_KIND_LIST(T) \
   T(TK_INC, "++") \
   T(TK_DEC, "--") \
   T(TK_ADD_ASSIGN, "+=") \
@@ -55,7 +55,7 @@ See LICENSE and README
 enum token_kind {
   TK_BEGIN = 256,
 #define T(tag,str) tag,
-  TOKEN_LIST(T)
+  TOKEN_KIND_LIST(T)
   KEYWORD_LIST(T)
 #undef T
   TK_END

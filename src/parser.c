@@ -73,27 +73,6 @@ static int next(parser_t *p, int kind)
   }
 }
 
-#if 0
-static const Token *get_current_token(const parser_t *p)
-{
-  return &p->token_buf[p->curr_token_index];
-}
-
-static int token_kind(const parser_t *p) {
-  const token_t *tok = get_current_token(p);
-  return token->kind;
-}
-#endif
-
-node_t *new_node(int kind, node_t *left, node_t *right)
-{
-  node_t *n = MEM_ALLOC(node_t);
-  n->kind = kind;
-  n->lnode = left;
-  n->rnode = right;
-  return n;
-}
-
 static node_t *list_node(node_t *current, node_t *next)
 {
   return new_node(AST_LIST, current, next);
@@ -110,13 +89,6 @@ node_t *ast_identifier(const char *number_string)
 {
   node_t *n = new_node(AST_SYMBOL, NULL, NULL);
   strcpy(n->value.word,number_string);
-  return n;
-}
-
-node_t *ast_var_decl(node_t *init)
-{
-  node_t *n = new_node(AST_VAR_DECL, NULL, NULL);
-  n->lnode = init;
   return n;
 }
 
@@ -812,14 +784,16 @@ static node_t *variable_declaration(parser_t *p)
   if (next(p, '=')) {
     expr = expression(p);
   }
+  if (expr == NULL) {
+    expr = new_node(AST_LITERAL, NULL, NULL);
+    expr->value.word[0] = '0';
+    expr->value.word[1] = '\0';
+  }
 
   if (!expect(p, ';')) {
   }
 
   return new_node(AST_VAR_DECL, ast_identifier(buf), expr);
-  /*
-  return ast_var_decl(expr);
-  */
 }
 
 /*
@@ -1311,13 +1285,18 @@ function_definition
 */
 static node_t *function_definition(parser_t *p)
 {
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
   node_t *func_def = NULL;
 
   assert_next(p, TK_FN);
   if (!expect(p, TK_IDENTIFIER)) {
   }
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
 
   func_def = new_node(AST_FN_DEF, NULL, NULL);
+  strcpy(func_def->value.word, buf);
   func_def->lnode = function_parameters(p);
 
   if (!expect(p, TK_INT)) {
@@ -1379,16 +1358,10 @@ static node_t *program(parser_t *p)
   */
 }
 
-int parse_file(struct parser *p, const char *filename)
+struct ast_node *parse_file(struct parser *p, const char *filename)
 {
-  const node_t *node = NULL;
-
   lex_input_file(&p->lex, filename);
-  node = program(p);
-
-  ast_print_tree(node);
-
-  return 0;
+  return program(p);
 }
 
 void parse_finish(struct parser *p)

@@ -4,10 +4,10 @@
    $ ./a.out
 */
 
-function main: int ()
+fn main() int
 {
-	var foo: int = 654 - 27 * 2;
-	var bar: int; // = 0
+	var foo int = 654 - 27 * 2;
+	var bar int; // = 0
 
 	vardump foo;
 

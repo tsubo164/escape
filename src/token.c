@@ -47,7 +47,7 @@ static const struct tks{
   const char *str;
 } tokstr[] = {
 #define T(tag,str) {tag,str},
-  TOKEN_LIST(T)
+  TOKEN_KIND_LIST(T)
   KEYWORD_LIST(T)
 #undef T
   {0,""} /* for no-comma entry */

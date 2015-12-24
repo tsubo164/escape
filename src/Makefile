@@ -9,7 +9,7 @@ target_dir  := src
 target_name := ec
 library     := libesc.a
 files       := \
-		ast lexer parser stream token
+		ast cgen lexer parser stream symbol type token
 
 incdir  := $(topdir)/src
 #libdir  := $(topdir)/lib

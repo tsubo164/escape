@@ -15,7 +15,7 @@ struct parser {
 
 #define PARSER_INIT {LEXER_INIT}
 
-extern int parse_file(struct parser *p, const char *filename);
+extern struct ast_node *parse_file(struct parser *p, const char *filename);
 extern void parse_finish(struct parser *p);
 
 #if 0

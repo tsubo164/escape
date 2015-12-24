@@ -5,53 +5,51 @@ See LICENSE and README
 
 #include "symbol.h"
 #include "memory.h"
-
 #include <string.h>
 #include <assert.h>
 
-enum { HASH_SIZE = 1237 }; /* a prime number */
-enum { MULTIPLIER = 31 };
+#define HASH_SIZE 1237 /* a prime number */
+#define MULTIPLIER 31
 
-struct TableEntry {
-	struct Symbol symbol;
-	struct TableEntry *next;
+struct table_entry {
+	struct symbol sym;
+	struct table_entry *next;
 };
+#define INIT_TABLE_ENTRY {INIT_SYMBOL, NULL}
 
-struct SymbolTable {
-	struct TableEntry *table[HASH_SIZE];
+struct symbol_table {
+	struct table_entry *table[HASH_SIZE];
 };
+#define INIT_SYBOL_TABLE {{NULL}}
 
-static struct TableEntry *new_entry(const char *name);
-static void free_entry(struct TableEntry *entry);
+static struct table_entry *new_entry(const char *name);
+static void free_entry(struct table_entry *entry);
 static unsigned int hash_fn(const char *key);
 static char *str_dup(const char *src);
 
-struct SymbolTable *SymbolTable_New(void)
+struct symbol_table *new_symbol_table(void)
 {
+	struct symbol_table *table = MEMORY_ALLOC(struct symbol_table);
 	int i;
-	struct SymbolTable *table = MEMORY_ALLOC(struct SymbolTable);
 
 	if (table == NULL) {
 		return NULL;
 	}
-
 	for (i = 0; i < HASH_SIZE; i++) {
 		table->table[i] = NULL;
 	}
-
 	return table;
 }
 
-void SymbolTable_Free(struct SymbolTable *table)
+void free_symbol_table(struct symbol_table *table)
 {
+	struct table_entry *entry = NULL;
+	struct table_entry *kill = NULL;
 	int i;
-	struct TableEntry *entry = NULL;
-	struct TableEntry *kill = NULL;
 
 	if (table == NULL) {
 		return;
 	}
-
 	for (i = 0; i < HASH_SIZE; i++) {
 		if (table->table[i] == NULL) {
 			continue;
@@ -62,33 +60,30 @@ void SymbolTable_Free(struct SymbolTable *table)
 			free_entry(kill);
 		}
 	}
-
 	MEMORY_FREE(table);
 }
 
-struct Symbol *SymbolTable_Lookup(struct SymbolTable *table, const char *key)
+struct symbol *lookup_symbol(struct symbol_table *table, const char *key)
 {
-	struct TableEntry *entry = NULL;
+	struct table_entry *entry = NULL;
 	const int h = hash_fn(key);
-
 	for (entry = table->table[h]; entry != NULL; entry = entry->next) {
-		if (strcmp(key, entry->symbol.name) == 0) {
-      return &entry->symbol;
+		if (strcmp(key, entry->sym.name) == 0) {
+      return &entry->sym;
 		}
 	}
-
 	return NULL;
 }
 
-struct Symbol *SymbolTable_Add(struct SymbolTable *table,
-		const char *name, int type)
+struct symbol *add_symbol(struct symbol_table *table,
+		const char *name, int kind)
 {
-	struct TableEntry *entry = NULL;
+	struct table_entry *entry = NULL;
 	const int h = hash_fn(name);
 
 	for (entry = table->table[h]; entry != NULL; entry = entry->next) {
-		if (strcmp(name, entry->symbol.name) == 0) {
-			return &entry->symbol;
+		if (strcmp(name, entry->sym.name) == 0) {
+			return &entry->sym;
 		}
 	}
 	assert(entry == NULL);
@@ -99,39 +94,39 @@ struct Symbol *SymbolTable_Add(struct SymbolTable *table,
 		return NULL;
 	}
 
-	entry->symbol.type = type;
-	entry->symbol.data_type = TYPE_NONE;
+	entry->sym.kind = kind;
+	entry->sym.type = TYPE_NONE;
 	entry->next = table->table[h];
 	table->table[h] = entry;
 
-	return &entry->symbol;
+	return &entry->sym;
 }
 
-static struct TableEntry *new_entry(const char *name)
+static struct table_entry *new_entry(const char *name)
 {
-	struct TableEntry *entry = MEMORY_ALLOC(struct TableEntry);
+	struct table_entry *entry = MEMORY_ALLOC(struct table_entry);
 
 	if (entry == NULL) {
 		return NULL;
 	}
 
-	entry->symbol.name = str_dup(name);
-	if (entry->symbol.name == NULL) {
+	entry->sym.name = str_dup(name);
+	if (entry->sym.name == NULL) {
 		free_entry(entry);
 		return NULL;
 	}
-	entry->symbol.type = SYM_NONE;
+	entry->sym.kind = SYM_NONE;
 
 	return entry;
 }
 
-void free_entry(struct TableEntry *entry)
+void free_entry(struct table_entry *entry)
 {
 	if (entry == NULL) {
 		return;
 	}
-	if (entry->symbol.name != NULL) {
-		MEMORY_FREE(entry->symbol.name);
+	if (entry->sym.name != NULL) {
+		MEMORY_FREE(entry->sym.name);
 	}
 	MEMORY_FREE(entry);
 }
@@ -167,4 +162,3 @@ static char *str_dup(const char *src)
 	strncpy(dst, src, alloc_size);
 	return dst;
 }
-
