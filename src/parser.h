@@ -8,9 +8,11 @@ See LICENSE and README
 
 #include "ast.h"
 #include "lexer.h"
+#include "symbol.h"
 
 struct parser {
   struct lexer lex;
+  struct symbol_table *symtbl;
 };
 
 #define PARSER_INIT {LEXER_INIT}

@@ -34,15 +34,18 @@ See LICENSE and README
   T(TK_CONTINUE, "continue") \
   T(TK_DEFAULT, "default") \
   T(TK_DO, "do") \
+  T(TK_DOUBLE, "double") \
   T(TK_ELSE, "else") \
   T(TK_ENUM, "enum") \
   T(TK_FALSE, "false") \
+  T(TK_FLOAT, "float") \
   T(TK_FN, "fn") \
   T(TK_FOR, "for") \
   T(TK_GOTO, "goto") \
   T(TK_IF, "if") \
   T(TK_INT, "int") \
   T(TK_LABEL, "label") \
+  T(TK_LONG, "long") \
   T(TK_NULL, "null") \
   T(TK_RETURN, "return") \
   T(TK_STRUCT, "struct") \

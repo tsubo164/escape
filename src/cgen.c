@@ -20,11 +20,11 @@ static void print_code_recursive(const node_t *node, context_t *cxt);
 void print_c_code(const node_t *node, context_t *cxt)
 {
   printf("#include <stdio.h>\n");
-  printf("#define VARDUMP(var) printf(\"#  %%s => %%d (int)\\n\", #var, var)\n");
   print_code_recursive(node, cxt);
 }
 
 /*
+  printf("#define VARDUMP(var,type,spec) printf(\"#  %%s => %%\"#spec\" (%%s)\\n\", #var, var, #type)\n");
 int main(int argc, const char **argv)
 {
 	const char *filename = NULL;
@@ -745,11 +745,14 @@ static void AST_LABEL_post_code(const node_t *node, context_t *cxt)
 /* AST_SYMBOL */
 static void AST_SYMBOL_pre_code(const node_t *node, context_t *cxt)
 {
+    /*
 	if (strcmp(node->value.word, "print") == 0) {
 		printf("printf");
 	} else {
 		printf("%s", node->value.word);
 	}
+    */
+  printf("%s", symbol_name(node->value.symbol));
 }
 static void AST_SYMBOL_in_code(const node_t *node, context_t *cxt)
 {
@@ -761,8 +764,11 @@ static void AST_SYMBOL_post_code(const node_t *node, context_t *cxt)
 /* AST_VAR_DECL */
 static void AST_VAR_DECL_pre_code(const node_t *node, context_t *cxt)
 {
+  node_t *idnt = node->lnode;
+  const int type = symbol_type(idnt->value.symbol);
+
   indent(cxt);
-	printf("int ");
+  printf("%s ", type_to_string(type));
 #if 0
   const char *ctype_name = NULL;
 
@@ -814,57 +820,25 @@ static void AST_VAR_DECL_post_code(const node_t *node, context_t *cxt)
 static void AST_VARDUMP_pre_code(const node_t *node, context_t *cxt)
 {
   indent(cxt);
-
-  printf("VARDUMP(");
-#if 0
-  printf("#define VARDUMP(var) printf(\"#  \"#var\" => %%d (int)\\n\", var)\n");
-  switch (node->value.symbol->data_type) {
-  case TYPE_BOOL:
-    printf("printf(\"#  %s => %%d (bool)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_CHAR:
-    printf("printf(\"#  %s => '%%c' (char)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_SHORT:
-    printf("printf(\"#  %s => %%d (short)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_INT:
-    printf("printf(\"#  %s => %%d (int)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_LONG:
-    printf("printf(\"#  %s => %%ld (long)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_FLOAT:
-    printf("printf(\"#  %s => %%g (float)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  case TYPE_DOUBLE:
-    printf("printf(\"#  %s => %%g (double)\\n\", %s)",
-        node->value.symbol->name,
-        node->value.symbol->name);
-    break;
-  default:
-    break;
-  }
-#endif
+  printf("printf(\"#  ");
 }
 static void AST_VARDUMP_in_code(const node_t *node, context_t *cxt)
 {
 }
 static void AST_VARDUMP_post_code(const node_t *node, context_t *cxt)
 {
-  printf(");\n");
+  node_t *idnt = node->lnode;
+  const int type = symbol_type(idnt->value.symbol);
+  const char *name = symbol_name(idnt->value.symbol);
+  const char *spec = "";
+  switch (type) {
+  case TYPE_INT: spec = "%d"; break;
+  case TYPE_LONG: spec = "%ld"; break;
+  case TYPE_FLOAT:
+  case TYPE_DOUBLE: spec = "%g"; break;
+  default: break;
+  }
+  printf(" => %s (%s)\\n\", %s);\n", spec, type_to_string(type), name);
 }
 
 typedef void (*WriteCode)(const node_t *node, context_t *cxt);

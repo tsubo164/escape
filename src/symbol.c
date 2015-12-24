@@ -162,3 +162,13 @@ static char *str_dup(const char *src)
 	strncpy(dst, src, alloc_size);
 	return dst;
 }
+
+const char *symbol_name(const struct symbol *sym)
+{
+  return sym->name;
+}
+
+int symbol_type(const struct symbol *sym)
+{
+  return sym->type;
+}

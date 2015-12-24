@@ -19,6 +19,7 @@ fn main() int
 	vardump bar;
 
 	bar = bar + foo + 1;
+	bar++;
 	vardump bar;
 
 	return 0;

@@ -9,6 +9,7 @@ build:
 clean:
 	@$(MAKE) $(MAKEFLAGS) -C src $@
 	@$(MAKE) $(MAKEFLAGS) -C tests $@
+	rm -f a.out
 
 check: build
 	@$(MAKE) $(MAKEFLAGS) -C tests $@

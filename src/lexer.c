@@ -142,6 +142,10 @@ static char scan_number(struct lexer *l, struct token *tok)
       *dst++ = prev = c;
       break;
     }
+    else if (toupper(c)=='X' || toupper(c)=='U' || toupper(c)=='L') {
+      *dst++ = prev = c;
+      break;
+    }
     else {
       unget_ch(l);
       break;

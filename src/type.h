@@ -7,9 +7,13 @@ See LICENSE and README
 #define TYPE_H
 
 #define TYPE_KIND_LIST(T) \
-  T(TYPE_VOID, "void") \
+  T(TYPE_UNKNOWN, "unknown") \
   T(TYPE_INT, "int") \
-  T(TYPE_STRING, "string")
+  T(TYPE_LONG, "long") \
+  T(TYPE_FLOAT, "float") \
+  T(TYPE_DOUBLE, "double") \
+  T(TYPE_STRING, "string") \
+  T(TYPE_VOID, "void")
 
 enum type_kind {
 #define T(tag,str) tag,

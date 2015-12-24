@@ -6,6 +6,8 @@ See LICENSE and README
 #ifndef AST_H
 #define AST_H
 
+#include "symbol.h"
+
 #define AST_KIND_LIST(T) \
   T(AST_ASSIGN, "=") \
   T(AST_OR, "||") \
@@ -68,10 +70,11 @@ struct ast_node {
 
   union {
     char word[128];
+    struct symbol *symbol;
   } value;
 };
 
-#define NODE_INIT {0,NULL,NULL}
+#define NODE_INIT {0,NULL,NULL,{0}}
 
 extern struct ast_node *new_node(int kind, struct ast_node *left, struct ast_node *right);
 extern void ast_print_tree(const struct ast_node *node);

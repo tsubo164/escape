@@ -9,6 +9,7 @@ See LICENSE and README
 #include <string.h>
 
 typedef struct ast_node node_t;
+typedef struct symbol symbol_t;
 typedef struct token token_t;
 typedef struct parser parser_t;
 
@@ -90,6 +91,29 @@ node_t *ast_identifier(const char *number_string)
   node_t *n = new_node(AST_SYMBOL, NULL, NULL);
   strcpy(n->value.word,number_string);
   return n;
+}
+
+static symbol_t *make_symbol(parser_t *p)
+{
+  int kind = SYM_NONE;
+  const token_t *tok = current_token(p);
+
+  if (kind_of(tok) == TK_VAR) {
+    kind = SYM_VAR;
+  } else {
+  }
+  return add_symbol(p->symtbl, word_value_of(tok), kind);
+}
+
+static node_t *identifier(parser_t *p)
+{
+  node_t *id = NULL;
+  if (!expect(p, TK_IDENTIFIER)) {
+    return NULL;
+  }
+  id = new_node(AST_SYMBOL, NULL, NULL);
+  id->value.symbol = make_symbol(p);
+  return id;
 }
 
 /* TODO ----------------------------------------------------------------- */
@@ -200,22 +224,6 @@ static int peek_token(parser_t *p)
   return kind;
 }
 
-#if 0
-static Symbol *new_symbol(parser_t *p, int symbol_type)
-{
-  Symbol *symbol = SymbolTable_Add(
-      symbol_table(p),
-      token_name(p),
-      symbol_type);
-
-  if (symbol == NULL) {
-    return NULL;
-  }
-
-  return symbol;
-}
-#endif
-
 /* to avoid too many recursive calls for just simple list like statement_list */
 typedef struct node_list {
   node_t *head;
@@ -240,22 +248,31 @@ static node_t *append(node_list_t *list, node_t *node)
   return node;
 }
 
-#if 0
-static DataType type_specifier(parser_t *p)
+static int type_specifier(parser_t *p)
 {
-  DataType data_type = TYPE_NONE;
+  int type = TYPE_UNKNOWN;
+  const token_t *tok = get_token(p);
 
-  get_next_token(p);
-  data_type = token_data_type(p);
-
-  if (data_type == TYPE_NONE) {
-    put_back_token(p);
-    return TYPE_NONE;
+  switch (kind_of(tok)) {
+  case TK_INT:
+    type = TYPE_INT;
+    break;
+  case TK_LONG:
+    type = TYPE_LONG;
+    break;
+  case TK_FLOAT:
+    type = TYPE_FLOAT;
+    break;
+  case TK_DOUBLE:
+    type = TYPE_DOUBLE;
+    break;
+  default:
+    unget_token(p);
+    break;
   }
 
-  return data_type;
+  return type;
 }
-#endif
 
 /*
 argument_expression_list
@@ -330,7 +347,8 @@ static node_t *primary_expression(parser_t *p)
       /* TODO error handling */
     }
 #endif
-    return ast_identifier(word_value_of(tok));
+    unget_token(p);
+    return identifier(p);
 
   case '(':
     node = expression(p);
@@ -667,18 +685,13 @@ vardump_statement
 */
 static node_t *vardump_statement(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
+  node_t *idnt = NULL;
 
   assert_next(p, TK_VARDUMP);
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
-
+  idnt = identifier(p);
   if (!expect(p, ';')) {
   }
-  return new_node(AST_VARDUMP, ast_identifier(buf), NULL);
+  return new_node(AST_VARDUMP, idnt, NULL);
 }
 
 /*
@@ -688,18 +701,13 @@ goto_statement
 */
 static node_t *goto_statement(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
+  node_t *idnt = NULL;
 
   assert_next(p, TK_GOTO);
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
-
+  idnt = identifier(p);
   if (!expect(p, ';')) {
   }
-  return new_node(AST_GOTO, ast_identifier(buf), NULL);
+  return new_node(AST_GOTO, idnt, NULL);
 }
 
 /*
@@ -709,25 +717,18 @@ label_statement
 */
 static node_t *label_statement(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
   node_t *stmt = NULL;
+  node_t *idnt = NULL;
 
   assert_next(p, TK_LABEL);
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
-
+  idnt = identifier(p);
   if (!expect(p, ':')) {
   }
-
   stmt = statement(p);
   if (stmt == NULL) {
     syntax_error(p, "labeled with no statement");
   }
-
-  return new_node(AST_LABEL, ast_identifier(buf), stmt);
+  return new_node(AST_LABEL, idnt, stmt);
 }
 
 /*
@@ -741,20 +742,16 @@ static node_t *case_statement(parser_t *p)
   node_t *stmt = NULL;
 
   assert_next(p, TK_CASE);
-
   expr = expression(p);
   if (expr == NULL) {
     syntax_error(p, "missing expression");
   }
-
   if (!expect(p, ':')) {
   }
-
   stmt = statement(p);
   if (stmt == NULL) {
     syntax_error(p, "case labeled with no statement");
   }
-
   return new_node(AST_CASE, expr, stmt);
 }
 
@@ -767,19 +764,12 @@ variable_declaration
 */
 static node_t *variable_declaration(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
   node_t *expr = NULL;
+  node_t *idnt = NULL;
 
   assert_next(p, TK_VAR);
-
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
-
-  if (next(p, TK_INT)) {
-  }
+  idnt = identifier(p);
+  idnt->value.symbol->type = type_specifier(p);
 
   if (next(p, '=')) {
     expr = expression(p);
@@ -792,8 +782,7 @@ static node_t *variable_declaration(parser_t *p)
 
   if (!expect(p, ';')) {
   }
-
-  return new_node(AST_VAR_DECL, ast_identifier(buf), expr);
+  return new_node(AST_VAR_DECL, idnt, expr);
 }
 
 /*
@@ -823,13 +812,6 @@ statement_list
 */
 static node_t *statement_list(parser_t *p)
 {
-#if 0
-  node_t *stmt = statement(p);
-  if (stmt == NULL) {
-    return NULL;
-  }
-  return list_node(stmt, statement_list(p));
-#endif
   node_list_t list = INIT_NODE_LIST;
   for (;;) {
     node_t *stmt = statement(p);
