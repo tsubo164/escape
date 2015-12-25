@@ -1,0 +1,13 @@
+The Escape programming language v0.0.6(Alpha) Release Notes
+===========================================================
+
+New features since v0.0.5
+-------------------------
+ * Changed function definition/variable declaration syntax.
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * function definition
+ * struct
+

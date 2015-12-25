@@ -19,10 +19,10 @@ syn region esString start=+"+ end=+"+
 syn match esNumber display "\<\d[0-9_]*\(u\=l\=\|l\=u\=\)\>"
 
 " Keywords
-syn keyword esBuiltinType          int string
-syn keyword esStatement            break case continue default do else for if return switch vardump while
+syn keyword esBuiltinType          bool char short int long float double string
+syn keyword esStatement            break case continue default do else for goto if label return switch vardump while new delete
 syn keyword esStorageClass         var const
-syn keyword esStructure            function struct
+syn keyword esStructure            fn struct
 
 hi def link esBlockComment         Comment
 hi def link esLineComment          Comment
