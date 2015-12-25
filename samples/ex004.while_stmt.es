@@ -4,9 +4,9 @@
    $ ./a.out
 */
 
-function main: int ()
+fn main() int
 {
-  var foo: int = 10;
+  var foo int = 10;
 
   while (foo > 0) {
     foo = foo - 1;

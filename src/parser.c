@@ -302,36 +302,6 @@ static int type_specifier(parser_t *p)
   return type;
 }
 
-/*
-argument_expression_list
-  ;
-*/
-#if 0
-static node_t *argument_expression_list(parser_t *p)
-{
-  Symbol *symbol = NULL;
-  node_t *node = NULL;
-
-  switch (peek_next_token(p)) {
-
-  case TK_STRING_LITERAL:
-    get_next_token(p);
-    symbol = SymbolTable_Add(
-        symbol_table(p),
-        token_string(p),
-        SYM_STRING_LITERAL);
-    node = AstNode_New(NODE_STRING_LITERAL);
-    node->value.symbol = symbol;
-    break;
-
-  default:
-    break;
-  }
-
-  return node;
-}
-#endif
-
 /* PROTOTYPES */
 static node_t *statement(parser_t *p);
 static node_t *expression(parser_t *p);
@@ -398,6 +368,16 @@ static node_t *primary_expression(parser_t *p)
 }
 
 /*
+argument_expression_list
+  ;
+*/
+static node_t *argument_expression_list(parser_t *p)
+{
+  /* TODO TEST ONLY ONE ARGUMENT */
+  return expression(p);
+}
+
+/*
 postfix_expression
   : primary_expression
   | postfix_expression TK_INC
@@ -414,6 +394,14 @@ static node_t *postfix_expression(parser_t *p)
   else if (next(p, TK_DEC)) {
     node = new_node(AST_POST_DEC, node, NULL);
   }
+  /* TODO TEST */
+  else if (next(p, '(')) {
+    node_t *args = argument_expression_list(p);
+    if (!expect(p, ')')) {
+    }
+    node = new_node(AST_CALL_EXPR, node, args);
+  }
+  /* TODO END OF TEST */
   return node;
 }
 
@@ -429,10 +417,10 @@ static node_t *unary_expression(parser_t *p)
 {
   node_t *node = NULL;
   if (next(p, TK_INC)) {
-    node = new_node(AST_PRE_INC, unary_expression(p), NULL);
+    node = new_node(AST_PRE_INC, NULL, unary_expression(p));
   }
   else if (next(p, TK_DEC)) {
-    node = new_node(AST_PRE_DEC, unary_expression(p), NULL);
+    node = new_node(AST_PRE_DEC, NULL, unary_expression(p));
   } else {
     node = postfix_expression(p);
   }
@@ -689,7 +677,7 @@ static node_t *expression_statement(parser_t *p)
 {
   node_t *expr = NULL;
 
-  if (peek_token(p) == ';') {
+  if (next(p, ';')) {
     return new_node(AST_EXPR_STMT, NULL, NULL);
   }
  
@@ -785,6 +773,25 @@ static node_t *case_statement(parser_t *p)
     syntax_error(p, "case labeled with no statement");
   }
   return new_node(AST_CASE, expr, stmt);
+}
+
+/*
+default_statement
+  : TK_CASE expression ':' statement
+  ;
+*/
+static node_t *default_statement(parser_t *p)
+{
+  node_t *stmt = NULL;
+
+  assert_next(p, TK_DEFAULT);
+  if (!expect(p, ':')) {
+  }
+  stmt = statement(p);
+  if (stmt == NULL) {
+    syntax_error(p, "default labeled with no statement");
+  }
+  return new_node(AST_DEFAULT, stmt, NULL);
 }
 
 /*
@@ -947,7 +954,7 @@ static node_t *if_statement(parser_t *p)
 
   then = new_node(AST_THEN, statement(p), NULL);
 
-  if (expect(p, TK_ELSE)) {
+  if (next(p, TK_ELSE)) {
     then->rnode = statement(p);
   }
 
@@ -1112,7 +1119,9 @@ static node_t *for_statement(parser_t *p)
     syntax_error(p, "missing statement");
   }
 
-  iter = expression(p);
+  if (peek_token(p) != ')') {
+    iter = expression(p);
+  }
   if (!expect(p, ')')) {
   }
 
@@ -1120,34 +1129,6 @@ static node_t *for_statement(parser_t *p)
   cond = new_node(AST_FOR_COND, expr, body);
 
   return new_node(AST_FOR_INIT, init, cond);
-#if 0
-  if (!expect(p, ';')) {
-    init = expression(p);
-    if (!expect(p, ';')) {
-      parse_error(p, "missing ';' after the first 'for' expression");
-      skip_until(p, ')');
-    }
-  }
-
-  if (!expect(p, ';')) {
-    expr = expression(p);
-    if (!expect(p, ';')) {
-      parse_error(p, "missing ';' after the second 'for' expression");
-      skip_until(p, ')');
-    }
-  }
-
-  if (!expect(p, ')')) {
-    iter = expression(p);
-    if (!expect(p, ')')) {
-      parse_error(p, "missing ')' after the third 'for' expression");
-      skip_until(p, '{');
-      put_back_token(p);
-    }
-  }
-
-  return NULL;
-#endif
 }
 
 /*
@@ -1244,6 +1225,8 @@ static node_t *statement(parser_t *p)
     return label_statement(p);
   case TK_CASE:
     return case_statement(p);
+  case TK_DEFAULT:
+    return default_statement(p);
 
   /* expression statements */
   case TK_IDENTIFIER:

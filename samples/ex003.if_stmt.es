@@ -4,10 +4,10 @@
    $ ./a.out
 */
 
-function main: int ()
+fn main() int
 {
-  var foo: int = 2;
-  var bar: int = 1;
+  var foo int = 2;
+  var bar int = 1;
 
   foo = 8 - 4 * 3 - 1;
 

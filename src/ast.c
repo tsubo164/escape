@@ -60,8 +60,10 @@ static void print_node_recursive(const node_t *node, int depth)
   if (node->kind != AST_LIST) {
     switch (node->kind) {
     case AST_LITERAL:
-    case AST_SYMBOL:
       printf("%s [%s]\n", ast_table[node->kind].string, node->value.word);
+      break;
+    case AST_SYMBOL:
+      printf("%s [%s]\n", ast_table[node->kind].string, symbol_name(node->value.symbol));
       break;
 
     default:

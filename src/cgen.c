@@ -240,7 +240,7 @@ static void AST_GE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 /* AST_EQ */
 static void AST_EQ_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	fprintf(fp, "(");
+  fprintf(fp, "(");
 }
 static void AST_EQ_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
@@ -248,7 +248,7 @@ static void AST_EQ_in_code(FILE *fp, const node_t *node, context_t *cxt)
 }
 static void AST_EQ_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	fprintf(fp, ")");
+  fprintf(fp, ")");
 }
 
 /* AST_NE */
@@ -420,7 +420,6 @@ static void AST_ASSIGN_post_code(FILE *fp, const node_t *node, context_t *cxt)
 }
 
 /* AST_CALL_EXPR */
-#if 0
 static void AST_CALL_EXPR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
@@ -432,7 +431,6 @@ static void AST_CALL_EXPR_post_code(FILE *fp, const node_t *node, context_t *cxt
 {
 	fprintf(fp, ")");
 }
-#endif
 
 /* AST_FN_DEF */
 static void AST_FN_DEF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
@@ -613,11 +611,7 @@ static void AST_CASE_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   cxt->depth--;
   indent(fp, cxt);
-  if (node->lnode != NULL) {
-    fprintf(fp, "case ");
-  } else {
-    fprintf(fp, "default");
-  }
+  fprintf(fp, "case ");
   cxt->depth++;
 }
 static void AST_CASE_in_code(FILE *fp, const node_t *node, context_t *cxt)
@@ -625,6 +619,23 @@ static void AST_CASE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 	fprintf(fp, ":\n");
 }
 static void AST_CASE_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+  indent(fp, cxt);
+	fprintf(fp, "break;\n");
+}
+
+/* AST_DEFAULT */
+static void AST_DEFAULT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+  cxt->depth--;
+  indent(fp, cxt);
+  fprintf(fp, "default:");
+  cxt->depth++;
+}
+static void AST_DEFAULT_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+static void AST_DEFAULT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   indent(fp, cxt);
 	fprintf(fp, "break;\n");
@@ -638,7 +649,9 @@ static void AST_FOR_INIT_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 }
 static void AST_FOR_INIT_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  /*
 	fprintf(fp, "; ");
+  */
 }
 static void AST_FOR_INIT_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
@@ -650,7 +663,9 @@ static void AST_FOR_COND_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 }
 static void AST_FOR_COND_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  /*
 	fprintf(fp, "; ");
+  */
 }
 static void AST_FOR_COND_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {

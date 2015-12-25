@@ -4,11 +4,11 @@
    $ ./a.out
 */
 
-function main: int ()
+fn main() int
 {
-  var foo: int = 10;
-  var bar: int;
-  var i: int;
+  var foo int = 10;
+  var bar int = 0;
+  var i int = 0;
 
   foo = 210 % 100;
   vardump foo;
@@ -29,6 +29,7 @@ function main: int ()
   print("------------------------\n");
 
   i = 0;
+
   for (;;) {
     if (i%2 == 1) {
       i++;

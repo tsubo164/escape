@@ -18,6 +18,7 @@ int main(int argc, const char **argv)
   struct symbol_table *symtbl = NULL;
   struct parser p = PARSER_INIT;
   int print_c = 0;
+  int print_tree = 0;
   FILE *fp = NULL;
   char cfile[128] = {'\0'};
 
@@ -25,6 +26,10 @@ int main(int argc, const char **argv)
     filename = argv[2];
     fp = stdout;
     print_c = 1;
+  } else if (argc == 3 && strcmp(argv[1], "-t") == 0) {
+    filename = argv[2];
+    fp = stdout;
+    print_tree = 1;
   } else if (argc == 2) {
     filename = argv[1];
     sprintf(cfile, "%s.c", filename);
@@ -36,17 +41,19 @@ int main(int argc, const char **argv)
   symtbl = new_symbol_table();
   p.symtbl = symtbl;
 
-  {
+  node = parse_file(&p, filename);
+  if (print_tree) {
+    ast_print_tree(node);
+  } else {
     struct context cxt = INIT_CONTEXT;
-    node = parse_file(&p, filename);
     print_c_code(fp, node, &cxt);
   }
 
-  if (!print_c) {
+  if (!print_c && !print_tree) {
     char cmd[128] = {'\0'};
     fclose(fp);
 
-    sprintf(cmd, "cc -O3 %s", cfile);
+    sprintf(cmd, "cc %s", cfile);
     system(cmd);
     sprintf(cmd, "rm -f %s", cfile);
     system(cmd);

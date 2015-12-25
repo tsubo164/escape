@@ -37,6 +37,7 @@ See LICENSE and README
   T(AST_STRING_LITERAL, "string_literal") \
   T(AST_EMPTY_STMT, "empty_statement") \
   T(AST_EXPR_STMT, "expression_statement") \
+  T(AST_CALL_EXPR, "call_expression") \
   T(AST_IF, "if") \
   T(AST_THEN, "then") \
   T(AST_SWITCH, "switch") \
@@ -48,6 +49,7 @@ See LICENSE and README
   T(AST_COMPOUND, "compound") \
   T(AST_LABEL, "label") \
   T(AST_CASE, "case") \
+  T(AST_DEFAULT, "default") \
   T(AST_SYMBOL, "symbol") \
   T(AST_BREAK, "break") \
   T(AST_CONTINUE, "continue") \

@@ -4,9 +4,9 @@
    $ ./a.out
 */
 
-function main: int ()
+fn main() int
 {
-  var foo: int;
+  var foo int = 0;
 
   switch (foo) {
   case 0:
