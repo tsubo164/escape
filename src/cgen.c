@@ -446,12 +446,44 @@ static void AST_FN_DEF_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
+/* AST_ENUM_DEF */
+static void AST_ENUM_DEF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+	fprintf(fp, "enum %s {\n", node->value.word);
+  /*
+  node_t *l = NULL;
+  for (l = node->lnode; l != NULL; l = l->rnode) {
+    fprintf(fp, "%s;\n", symbol_name(l->lnode->value.symbol));
+  }
+  */
+  cxt->is_inside_enum_def = 1;
+  cxt->depth++;
+}
+static void AST_ENUM_DEF_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+	fprintf(fp, "};\n");
+  cxt->is_inside_enum_def = 0;
+  cxt->depth--;
+}
+static void AST_ENUM_DEF_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+
 /* AST_LIST */
 static void AST_LIST_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  if (cxt->is_inside_enum_def) {
+    indent(fp, cxt);
+  }
 }
 static void AST_LIST_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  if (cxt->is_inside_enum_def) {
+    if (node->rnode != NULL) {
+      fprintf(fp, ",");
+    }
+    fprintf(fp, "\n");
+  }
 }
 static void AST_LIST_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
@@ -620,8 +652,6 @@ static void AST_CASE_in_code(FILE *fp, const node_t *node, context_t *cxt)
 }
 static void AST_CASE_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  indent(fp, cxt);
-	fprintf(fp, "break;\n");
 }
 
 /* AST_DEFAULT */

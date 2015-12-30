@@ -89,13 +89,6 @@ node_t *ast_number(const char *number_string)
   return n;
 }
 
-node_t *ast_identifier(const char *number_string)
-{
-  node_t *n = new_node(AST_SYMBOL, NULL, NULL);
-  strcpy(n->value.word,number_string);
-  return n;
-}
-
 static symbol_t *make_symbol(parser_t *p)
 {
   int kind = SYM_NONE;
@@ -1304,17 +1297,93 @@ static node_t *function_definition(parser_t *p)
 }
 
 /*
+enumerator
+  : TK_IDENTIFIER ';'
+  ;
+*/
+static node_t *enumerator(parser_t *p)
+{
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
+  node_t *enm = NULL;
+
+  if (!next(p, TK_IDENTIFIER)) {
+    return NULL;
+  }
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
+
+  if (!expect(p, ';')) {
+  }
+
+  enm = new_node(AST_SYMBOL, NULL, NULL);
+  enm->value.symbol = add_symbol(p->symtbl, buf, SYM_ENUMERATOR);
+
+  return enm;
+}
+
+/*
+enumerator_list
+  : enumerator
+  | enumerator enumerator_list
+  ;
+*/
+static node_t *enumerator_list(parser_t *p)
+{
+  node_list_t list = INIT_NODE_LIST;
+  for (;;) {
+    node_t *enm = enumerator(p);
+    if (enm == NULL) { break; }
+    append(&list, enm);
+  }
+  return list.head;
+}
+
+/*
+enumeration_declaration
+  : TK_ENUM TK_IDENTIFIER '{' enumerator_list '}' ';'
+  ;
+*/
+static node_t *enumeration_declaration(parser_t *p)
+{
+  char buf[128] = {'\0'};
+  const token_t *tok = NULL;
+  node_t *enum_def = NULL;
+  node_t *enum_list = NULL;
+
+  assert_next(p, TK_ENUM);
+  if (!expect(p, TK_IDENTIFIER)) {
+  }
+  tok = current_token(p);
+  strcpy(buf, word_value_of(tok));
+
+  if (!expect(p, '{')) {
+  }
+  enum_list = enumerator_list(p);
+  if (!expect(p, '}')) {
+  }
+  if (!expect(p, ';')) {
+  }
+
+  enum_def = new_node(AST_ENUM_DEF, enum_list, NULL);
+  strcpy(enum_def->value.word, buf);
+  return enum_def;
+}
+
+/*
 external_declaration
   : function_definition
   | variable_declaration
+  | enumeration_declaration
   ;
 */
 static node_t *external_declaration(parser_t *p)
 {
   switch (peek_token(p)) {
-  case TK_FN:  return function_definition(p);
-  case TK_VAR: return variable_declaration(p);
-  case TK_EOS: return NULL;
+  case TK_FN:   return function_definition(p);
+  case TK_VAR:  return variable_declaration(p);
+  case TK_ENUM: return enumeration_declaration(p);
+  case TK_EOS:  return NULL;
   default:
     printf("[%s]\n", kind_to_string(kind_of(current_token(p))));
     syntax_error(p, "unexpected declaration");

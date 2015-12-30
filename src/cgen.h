@@ -10,8 +10,9 @@ See LICENSE and README
 
 struct context {
   int depth;
+  int is_inside_enum_def;
 };
-#define INIT_CONTEXT {0};
+#define INIT_CONTEXT {0, 0};
 
 struct ast_node;
 

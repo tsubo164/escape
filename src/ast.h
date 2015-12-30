@@ -56,6 +56,7 @@ See LICENSE and README
   T(AST_GOTO, "goto") \
   T(AST_RETURN, "return") \
   T(AST_FN_DEF, "fn_def") \
+  T(AST_ENUM_DEF, "enum_def") \
   T(AST_VAR_DECL, "var_decl") \
   T(AST_VARDUMP, "vardump")
 

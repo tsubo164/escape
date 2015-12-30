@@ -13,13 +13,16 @@ fn main() int
     print("zero\n");
     foo++;
     print("zerozero\n");
+    break;
   case 1:
     print("one\n");
     foo--;
     print("oneone\n");
+    break;
   default:
     print("default\n");
     print("defaultdefault\n");
+    break;
   }
 
   return 0;
