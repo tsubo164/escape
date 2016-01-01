@@ -1346,28 +1346,21 @@ enumeration_declaration
 */
 static node_t *enumeration_declaration(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
-  node_t *enum_def = NULL;
   node_t *enum_list = NULL;
+  node_t *enum_idnt = NULL;
 
   assert_next(p, TK_ENUM);
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
+  enum_idnt = identifier(p);
 
   if (!expect(p, '{')) {
   }
   enum_list = enumerator_list(p);
   if (!expect(p, '}')) {
   }
+
   if (!expect(p, ';')) {
   }
-
-  enum_def = new_node(AST_ENUM_DEF, enum_list, NULL);
-  strcpy(enum_def->value.word, buf);
-  return enum_def;
+  return new_node(AST_ENUM_DEF, enum_idnt, enum_list);
 }
 
 /*
