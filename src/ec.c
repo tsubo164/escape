@@ -53,7 +53,7 @@ int main(int argc, const char **argv)
     char cmd[128] = {'\0'};
     fclose(fp);
 
-    sprintf(cmd, "cc %s", cfile);
+    sprintf(cmd, "cc -Wall -ansi -O3 %s", cfile);
     system(cmd);
     sprintf(cmd, "rm -f %s", cfile);
     system(cmd);

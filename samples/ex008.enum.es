@@ -5,7 +5,7 @@
 */
 
 enum token_kind {
-  number;
+  number = 256;
   identifier;
   keyword;
   unknown;

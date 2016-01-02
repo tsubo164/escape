@@ -1,6 +1,6 @@
 CC = cc
 OPT = -O3
-CFLAGS = -Wall -ansi $(OPT)
+CFLAGS = -Wall -ansi --pedantic-errors $(OPT)
 LDFLAGS = -lm
 RM = rm -f
 

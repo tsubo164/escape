@@ -1275,24 +1275,20 @@ function_definition
 */
 static node_t *function_definition(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
   node_t *func_def = NULL;
+  node_t *func_body = NULL;
+  node_t *idnt = NULL;
 
   assert_next(p, TK_FN);
-  if (!expect(p, TK_IDENTIFIER)) {
-  }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
+  idnt = identifier(p);
+  func_def = new_node(AST_FN_DEF, idnt, NULL);
+  func_body = new_node(AST_FN_BODY, NULL, NULL);
 
-  func_def = new_node(AST_FN_DEF, NULL, NULL);
-  strcpy(func_def->value.word, buf);
-  func_def->lnode = function_parameters(p);
+  func_body->lnode = function_parameters(p);
+  idnt->value.symbol->type = type_specifier(p);
+  func_body->rnode = function_body(p);
 
-  if (!expect(p, TK_INT)) {
-  }
-
-  func_def->rnode = function_body(p);
+  func_def->rnode = func_body;
   return func_def;
 }
 
@@ -1303,21 +1299,24 @@ enumerator
 */
 static node_t *enumerator(parser_t *p)
 {
-  char buf[128] = {'\0'};
-  const token_t *tok = NULL;
   node_t *enm = NULL;
+  node_t *idnt = NULL;
+  node_t *expr = NULL;
 
-  if (!next(p, TK_IDENTIFIER)) {
+  if (peek_token(p) != TK_IDENTIFIER) {
     return NULL;
   }
-  tok = current_token(p);
-  strcpy(buf, word_value_of(tok));
+  idnt = identifier(p);
+  idnt->value.symbol->kind = SYM_ENUMERATOR;
+
+  if (next(p, '=')) {
+    expr = expression(p);
+  }
+
+  enm = new_node(AST_ENUMERATOR, idnt, expr);
 
   if (!expect(p, ';')) {
   }
-
-  enm = new_node(AST_SYMBOL, NULL, NULL);
-  enm->value.symbol = add_symbol(p->symtbl, buf, SYM_ENUMERATOR);
 
   return enm;
 }

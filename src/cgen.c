@@ -435,14 +435,31 @@ static void AST_CALL_EXPR_post_code(FILE *fp, const node_t *node, context_t *cxt
 /* AST_FN_DEF */
 static void AST_FN_DEF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	const char *function_name = node->value.word;
-	fprintf(fp, "int %s(void", function_name);
+	fprintf(fp, "int ");
 }
 static void AST_FN_DEF_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-	fprintf(fp, ")\n");
+  /*
+	fprintf(fp, "(void)\n");
+  */
 }
 static void AST_FN_DEF_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+
+/* AST_FN_BODY */
+static void AST_FN_BODY_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+	fprintf(fp, "(");
+  if (node->lnode == NULL) {
+    fprintf(fp, "void");
+  }
+}
+static void AST_FN_BODY_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+	fprintf(fp, ")\n");
+}
+static void AST_FN_BODY_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
 }
 
@@ -462,6 +479,20 @@ static void AST_ENUM_DEF_post_code(FILE *fp, const node_t *node, context_t *cxt)
 	fprintf(fp, "};\n");
   cxt->is_inside_enum_def = 0;
   cxt->depth--;
+}
+
+/* AST_ENUMERATOR */
+static void AST_ENUMERATOR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+static void AST_ENUMERATOR_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+  if (node->rnode != NULL) {
+    fprintf(fp, " = ");
+  }
+}
+static void AST_ENUMERATOR_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
 }
 
 /* AST_LIST */
