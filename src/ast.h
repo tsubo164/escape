@@ -75,7 +75,6 @@ struct ast_node {
   struct ast_node *rnode;
 
   union {
-    char word[128];
     struct symbol *symbol;
   } value;
 };

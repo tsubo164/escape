@@ -82,34 +82,46 @@ static node_t *list_node(node_t *current, node_t *next)
   return new_node(AST_LIST, current, next);
 }
 
-node_t *ast_number(const char *number_string)
-{
-  node_t *n = new_node(AST_LITERAL, NULL, NULL);
-  strcpy(n->value.word,number_string);
-  return n;
-}
-
 static symbol_t *make_symbol(parser_t *p)
 {
   int kind = SYM_NONE;
   const token_t *tok = current_token(p);
-
+/*
   if (kind_of(tok) == TK_VAR) {
     kind = SYM_VAR;
   } else {
   }
+*/
   return add_symbol(p->symtbl, word_value_of(tok), kind);
+}
+
+static node_t *ast_number(parser_t *p, const char *number_string)
+{
+  node_t *node = new_node(AST_LITERAL, NULL, NULL);
+  node->value.symbol = add_symbol(p->symtbl, number_string, SYM_NONE);
+  return node;
+}
+
+static node_t *number(parser_t *p)
+{
+  node_t *node = NULL;
+  if (!expect(p, TK_NUMBER)) {
+    return NULL;
+  }
+  node = new_node(AST_LITERAL, NULL, NULL);
+  node->value.symbol = make_symbol(p);
+  return node;
 }
 
 static node_t *identifier(parser_t *p)
 {
-  node_t *id = NULL;
+  node_t *node = NULL;
   if (!expect(p, TK_IDENTIFIER)) {
     return NULL;
   }
-  id = new_node(AST_SYMBOL, NULL, NULL);
-  id->value.symbol = make_symbol(p);
-  return id;
+  node = new_node(AST_SYMBOL, NULL, NULL);
+  node->value.symbol = make_symbol(p);
+  return node;
 }
 
 node_t *string_literal(parser_t *p)
@@ -121,7 +133,7 @@ node_t *string_literal(parser_t *p)
   }
   tok = current_token(p);
   sl = new_node(AST_STRING_LITERAL, NULL, NULL);
-  sl->value.symbol = add_symbol(p->symtbl, string_value_of(tok), SYM_STRING_LITERAL);
+  sl->value.symbol = add_symbol(p->symtbl, string_value_of(tok), SYM_LITERAL);
   return sl;
 }
 
@@ -318,7 +330,8 @@ static node_t *primary_expression(parser_t *p)
   switch (kind_of(tok)) {
 
   case TK_NUMBER:
-    return ast_number(word_value_of(tok));
+    unget_token(p);
+    return number(p);
 
   case TK_IDENTIFIER:
 #if 0
@@ -807,9 +820,8 @@ static node_t *variable_declaration(parser_t *p)
     expr = expression(p);
   }
   if (expr == NULL) {
-    expr = new_node(AST_LITERAL, NULL, NULL);
-    expr->value.word[0] = '0';
-    expr->value.word[1] = '\0';
+    /* TODO TMP */
+    expr = ast_number(p, "0");
   }
 
   if (!expect(p, ';')) {

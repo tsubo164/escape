@@ -518,10 +518,11 @@ static void AST_LIST_post_code(FILE *fp, const node_t *node, context_t *cxt)
 /* AST_LITERAL */
 static void AST_LITERAL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
-  if (isalpha(node->value.word[0]) && node->value.word[1] == '\0') {
-    fprintf(fp, "'%s'", node->value.word);
+  const char *literal = symbol_name(node->value.symbol);
+  if (isalpha(literal[0]) && literal[1] == '\0') {
+    fprintf(fp, "'%s'", literal);
   } else {
-    fprintf(fp, "%s", node->value.word);
+    fprintf(fp, "%s", literal);
   }
 }
 static void AST_LITERAL_in_code(FILE *fp, const node_t *node, context_t *cxt)

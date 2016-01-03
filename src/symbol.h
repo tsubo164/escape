@@ -15,7 +15,7 @@ enum symbol_kind {
 	SYM_FUNCTION,
 	SYM_LABEL,
 	SYM_ENUMERATOR,
-	SYM_STRING_LITERAL
+	SYM_LITERAL
 };
 
 struct symbol {

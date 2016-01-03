@@ -3,8 +3,8 @@ Copyright (c) 2012-2015 Hiroshi Tsubokawa
 See LICENSE and README
 */
 
-#ifndef CCODE_H
-#define CCODE_H
+#ifndef CGEN_H
+#define CGEN_H
 
 #include <stdio.h>
 
