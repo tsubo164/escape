@@ -78,6 +78,7 @@ struct symbol *lookup_symbol(struct symbol_table *table, const char *key)
 struct symbol *add_symbol(struct symbol_table *table,
 		const char *name, int kind)
 {
+  const struct type_info ini_type = INIT_TYPE_INFO;
 	struct table_entry *entry = NULL;
 	const int h = hash_fn(name);
 
@@ -95,7 +96,7 @@ struct symbol *add_symbol(struct symbol_table *table,
 	}
 
 	entry->sym.kind = kind;
-	entry->sym.type = TYPE_NONE;
+	entry->sym.type = ini_type;
 	entry->next = table->table[h];
 	table->table[h] = entry;
 
@@ -168,7 +169,7 @@ const char *symbol_name(const struct symbol *sym)
   return sym->name;
 }
 
-int symbol_type(const struct symbol *sym)
+struct type_info symbol_type(const struct symbol *sym)
 {
   return sym->type;
 }

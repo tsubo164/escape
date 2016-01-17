@@ -6,6 +6,8 @@ See LICENSE and README
 #ifndef TYPE_H
 #define TYPE_H
 
+#include <stdlib.h>
+
 #define TYPE_KIND_LIST(T) \
   T(TYPE_UNKNOWN, "unknown") \
   T(TYPE_BOOL, "bool") \
@@ -22,8 +24,16 @@ enum type_kind {
 #define T(tag,str) tag,
   TYPE_KIND_LIST(T)
 #undef T
-  TYPE_NONE
+  TYPE_NONE /* for no-comma entry */
 };
+
+struct type_info {
+  char kind;
+  char is_array;
+  size_t array_size;
+};
+
+#define INIT_TYPE_INFO {TYPE_UNKNOWN,0,0}
 
 extern const char *type_to_string(int type);
 

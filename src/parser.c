@@ -269,39 +269,50 @@ static node_t *append(node_list_t *list, node_t *node)
   return node;
 }
 
-static int type_specifier(parser_t *p)
+static struct type_info type_specifier(parser_t *p)
 {
-  int type = TYPE_UNKNOWN;
+  struct type_info type = INIT_TYPE_INFO;
   const token_t *tok = get_token(p);
 
   switch (kind_of(tok)) {
   case TK_BOOL:
-    type = TYPE_BOOL;
+    type.kind = TYPE_BOOL;
     break;
   case TK_CHAR:
-    type = TYPE_CHAR;
+    type.kind = TYPE_CHAR;
     break;
   case TK_SHORT:
-    type = TYPE_SHORT;
+    type.kind = TYPE_SHORT;
     break;
   case TK_INT:
-    type = TYPE_INT;
+    type.kind = TYPE_INT;
     break;
   case TK_LONG:
-    type = TYPE_LONG;
+    type.kind = TYPE_LONG;
     break;
   case TK_FLOAT:
-    type = TYPE_FLOAT;
+    type.kind = TYPE_FLOAT;
     break;
   case TK_DOUBLE:
-    type = TYPE_DOUBLE;
+    type.kind = TYPE_DOUBLE;
     break;
   case TK_STRING:
-    type = TYPE_STRING;
+    type.kind = TYPE_STRING;
     break;
   default:
     unget_token(p);
     break;
+  }
+
+  if (next(p, '[')) {
+    type.is_array = 1;
+    if (next(p, TK_NUMBER)) {
+      char *end = NULL;
+      const token_t *tok = current_token(p);
+      type.array_size = strtol(word_value_of(tok), &end, 10);
+    }
+    if (!expect(p, ']')) {
+    }
   }
 
   return type;
@@ -399,6 +410,12 @@ static node_t *postfix_expression(parser_t *p)
   }
   else if (next(p, TK_DEC)) {
     node = new_node(AST_POST_DEC, node, NULL);
+  }
+  else if (next(p, '[')) {
+    node_t *expr = expression(p);
+    if (!expect(p, ']')) {
+    }
+    node = new_node(AST_SUBSCRIPT_EXPR, node, expr);
   }
   /* TODO TEST */
   else if (next(p, '(')) {
@@ -711,13 +728,13 @@ vardump_statement
 */
 static node_t *vardump_statement(parser_t *p)
 {
-  node_t *idnt = NULL;
+  node_t *expr = NULL;
 
   assert_next(p, TK_VARDUMP);
-  idnt = identifier(p);
+  expr = expression(p);
   if (!expect(p, ';')) {
   }
-  return new_node(AST_VARDUMP, idnt, NULL);
+  return new_node(AST_VARDUMP, expr, NULL);
 }
 
 /*
@@ -801,6 +818,44 @@ static node_t *default_statement(parser_t *p)
 }
 
 /*
+initializer
+  : TK_VAR identifier type_specifier ';'
+  ;
+*/
+static node_t *array_initializer(parser_t *p)
+{
+  node_list_t list = INIT_NODE_LIST;
+  for (;;) {
+    node_t *expr = expression(p);
+    if (expr == NULL) { break; }
+    append(&list, expr);
+
+    if (next(p, ',')) {
+      continue;
+    } else if (next(p, '}')) {
+      break;
+    }
+  }
+  return list.head;
+}
+
+/*
+initializer
+  : TK_VAR identifier type_specifier ';'
+  ;
+*/
+static node_t *initializer(parser_t *p)
+{
+  node_t *init = NULL;
+  if (next(p, '{')) {
+    init = array_initializer(p);
+  } else {
+    init = expression(p);
+  }
+  return init;
+}
+
+/*
 variable_declaration
   : TK_VAR identifier type_specifier ';'
   | TK_VAR identifier type_specifier initializer ';'
@@ -817,7 +872,10 @@ static node_t *variable_declaration(parser_t *p)
   idnt->value.symbol->type = type_specifier(p);
 
   if (next(p, '=')) {
+    /*
     expr = expression(p);
+    */
+    expr = initializer(p);
   }
   if (expr == NULL) {
     /* TODO TMP */

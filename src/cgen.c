@@ -432,6 +432,19 @@ static void AST_CALL_EXPR_post_code(FILE *fp, const node_t *node, context_t *cxt
 	fprintf(fp, ")");
 }
 
+/* AST_SUBSCRIPT_EXPR */
+static void AST_SUBSCRIPT_EXPR_pre_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+}
+static void AST_SUBSCRIPT_EXPR_in_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+  fprintf(fp, "[");
+}
+static void AST_SUBSCRIPT_EXPR_post_code(FILE *fp, const node_t *node, context_t *cxt)
+{
+	fprintf(fp, "]");
+}
+
 /* AST_FN_DEF */
 static void AST_FN_DEF_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
@@ -509,6 +522,11 @@ static void AST_LIST_in_code(FILE *fp, const node_t *node, context_t *cxt)
       fprintf(fp, ",");
     }
     fprintf(fp, "\n");
+  }
+  else if (cxt->is_inside_initializer) {
+    if (node->rnode != NULL) {
+      fprintf(fp, ", ");
+    }
   }
 }
 static void AST_LIST_post_code(FILE *fp, const node_t *node, context_t *cxt)
@@ -851,23 +869,40 @@ static void AST_SYMBOL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 static void AST_VAR_DECL_pre_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   node_t *idnt = node->lnode;
-  const int type = symbol_type(idnt->value.symbol);
+  const struct type_info type = symbol_type(idnt->value.symbol);
 
   indent(fp, cxt);
-  if (type == TYPE_BOOL) {
+  if (type.kind == TYPE_BOOL) {
     fprintf(fp, "char ");
-  } else if (type == TYPE_STRING) {
+  } else if (type.kind == TYPE_STRING) {
     fprintf(fp, "char *");
   } else {
-    fprintf(fp, "%s ", type_to_string(type));
+    fprintf(fp, "%s ", type_to_string(type.kind));
   }
 }
 static void AST_VAR_DECL_in_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  node_t *idnt = node->lnode;
+  const struct type_info type = symbol_type(idnt->value.symbol);
+  if (type.is_array) {
+    fprintf(fp, "[%lu]", type.array_size);
+  }
+
 	fprintf(fp, " = ");
+
+  if (type.is_array) {
+    fprintf(fp, "{");
+    cxt->is_inside_initializer = 1;
+  }
 }
 static void AST_VAR_DECL_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
+  node_t *idnt = node->lnode;
+  const struct type_info type = symbol_type(idnt->value.symbol);
+  if (type.is_array) {
+    fprintf(fp, "}");
+    cxt->is_inside_initializer = 0;
+  }
 	fprintf(fp, ";\n");
 }
 
@@ -883,10 +918,10 @@ static void AST_VARDUMP_in_code(FILE *fp, const node_t *node, context_t *cxt)
 static void AST_VARDUMP_post_code(FILE *fp, const node_t *node, context_t *cxt)
 {
   node_t *idnt = node->lnode;
-  const int type = symbol_type(idnt->value.symbol);
+  const struct type_info type = symbol_type(idnt->value.symbol);
   const char *name = symbol_name(idnt->value.symbol);
   const char *spec = "";
-  switch (type) {
+  switch (type.kind) {
   case TYPE_CHAR:
     fprintf(fp, " => '%%c' (char)\\n\", %s);\n", name);
     return;
@@ -906,7 +941,7 @@ static void AST_VARDUMP_post_code(FILE *fp, const node_t *node, context_t *cxt)
     break;
   default: break;
   }
-  fprintf(fp, " => %s (%s)\\n\", %s);\n", spec, type_to_string(type), name);
+  fprintf(fp, " => %s (%s)\\n\", %s);\n", spec, type_to_string(type.kind), name);
 }
 
 typedef void (*WriteCode)(FILE *fp, const node_t *node, context_t *cxt);

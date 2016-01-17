@@ -21,12 +21,12 @@ enum symbol_kind {
 struct symbol {
 	char *name;
 	int kind;
-  int type;
+  struct type_info type;
 };
 #define INIT_SYMBOL {"", SYM_NONE, TYPE_UNKNOWN};
 
-const char *symbol_name(const struct symbol *sym);
-int symbol_type(const struct symbol *sym);
+extern const char *symbol_name(const struct symbol *sym);
+extern struct type_info symbol_type(const struct symbol *sym);
 
 extern struct symbol_table *new_symbol_table(void);
 extern void free_symbol_table(struct symbol_table *table);

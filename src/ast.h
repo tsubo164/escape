@@ -38,6 +38,7 @@ See LICENSE and README
   T(AST_EMPTY_STMT, "empty_statement") \
   T(AST_EXPR_STMT, "expression_statement") \
   T(AST_CALL_EXPR, "call_expression") \
+  T(AST_SUBSCRIPT_EXPR, "call_expression") \
   T(AST_IF, "if") \
   T(AST_THEN, "then") \
   T(AST_SWITCH, "switch") \

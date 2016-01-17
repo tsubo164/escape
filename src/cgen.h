@@ -11,8 +11,9 @@ See LICENSE and README
 struct context {
   int depth;
   int is_inside_enum_def;
+  int is_inside_initializer;
 };
-#define INIT_CONTEXT {0, 0};
+#define INIT_CONTEXT {0, 0, 0};
 
 struct ast_node;
 
