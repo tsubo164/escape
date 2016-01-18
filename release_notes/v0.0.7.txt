@@ -1,0 +1,12 @@
+The Escape programming language v0.0.7(Alpha) Release Notes
+===========================================================
+
+New features since v0.0.6
+-------------------------
+ * Added enum and array.
+
+Features under development
+--------------------------
+This is the first release. The features the below are under development.
+ * function definition
+ * struct
