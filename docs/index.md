@@ -1,11 +1,11 @@
 ---
 layout: default
 ---
-#The escape is yet another programming language.
+# The escape is yet another programming language.
 
-##Overview
+## Overview
 
-###The Escape is simple, efficient and statically typed programming language.
+### The Escape is simple, efficient and statically typed programming language.
 * Efficiency - Produces native code.
 * Simple syntax - Very similar to C but simpler and less confusing.
 * Fool proof - Strong static checking system.
