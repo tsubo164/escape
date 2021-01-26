@@ -1,6 +1,3 @@
----
-layout: default
----
 # The escape programming language
 
 ## Overview
