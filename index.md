@@ -1,4 +1,4 @@
-# The escape programming language
+# The Escape programming language
 
 ## Overview
 
